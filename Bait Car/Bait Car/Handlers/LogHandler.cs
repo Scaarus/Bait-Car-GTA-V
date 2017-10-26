@@ -27,7 +27,7 @@ namespace Bait_Car.Handlers
             if (type == LogType.DEBUG && !DebugMode) return;
 
             // [Bait Car v0.1 Alpha] (INFO): Plugin initializing...
-            var final = $"[Bait Car {EntryPoint.Version}] ({Enum.GetName(typeof(LogType), type)}): {message}";
+            var final = $"[{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}][Bait Car {EntryPoint.Version}] ({Enum.GetName(typeof(LogType), type)}): {message}";
             Rage.Game.Console.Print(final);
         }
     }
