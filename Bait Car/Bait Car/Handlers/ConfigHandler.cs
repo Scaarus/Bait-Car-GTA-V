@@ -250,5 +250,50 @@ Debug=False";
 
             return Enum.TryParse(stringValue, out Keys keyValue) ? defaultValue : keyValue;
         }
+
+        /// <summary>
+        /// Sets a specific key to the given value.
+        /// </summary>
+        /// <param name="section">The section the key is part of.</param>
+        /// <param name="key">The key to replace.</param>
+        /// <param name="value">The value to set.</param>
+        /// <returns>True if the value was set successfully.</returns>
+        public bool SetValue(string section, string key, string value)
+        {
+            try
+            {
+                var lines = new List<string>();
+
+                // Load the current config file
+                using (var sr = new StreamReader(FilePath))
+                {
+                    while (!sr.EndOfStream)
+                    {
+                        lines.Add(sr.ReadLine());
+                    }
+                }
+
+                var sectionIndex = lines.FindIndex(f => f == $"[{section}]");
+                LogHandler.Log("Section: " + lines[sectionIndex], LogType.DEBUG);
+                var keyIndex = lines.FindIndex(sectionIndex, f => f.StartsWith(key));
+                LogHandler.Log("Key: " + lines[keyIndex], LogType.DEBUG);
+
+                var valueIndex = lines.ElementAt(keyIndex).IndexOf("=", StringComparison.Ordinal) + 1;
+                LogHandler.Log("Value: " + lines[keyIndex].Remove(0, valueIndex), LogType.DEBUG);
+                lines[keyIndex] = lines.ElementAt(keyIndex).Remove(valueIndex) + value;
+
+                using (var sw = new StreamWriter(FilePath))
+                    foreach (var line in lines)
+                        sw.WriteLine(line);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogHandler.Log("Unable to load the config file.", LogType.ERROR);
+                LogHandler.Log(e.Message, LogType.DEBUG);
+            }
+            return false;
+        }
     }
 }
