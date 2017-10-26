@@ -20,6 +20,7 @@ namespace Bait_Car.Handlers
             @"// Set any keybind to 'None' to disable that key
 
 [Keys]
+
 // The main key that opens the menu
 // Default: F7
 OpenMenu=F7
@@ -70,7 +71,12 @@ MaxSearchRadius=100
 // Set this to true if you want to disable helpful tool tips
 // Also disables notification telling you when you are far enough away
 // Default: False
-Hardcore=False";
+Hardcore=False
+
+// Debug mode
+// Only enable at developer request
+// Default: False
+Debug=False";
 
         private Dictionary<string, string> Options = new Dictionary<string, string>();
 
@@ -100,7 +106,6 @@ Hardcore=False";
         /// <returns>True if the file exists.</returns>
         private static bool DoesConfigExist()
         {
-            LogHandler.Log(Path.Combine(Directory.GetCurrentDirectory(), FilePath));
             return File.Exists(Path.Combine(Directory.GetCurrentDirectory(),FilePath));
         }
 
