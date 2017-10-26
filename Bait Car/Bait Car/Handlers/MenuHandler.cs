@@ -1,21 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using System.Windows.Forms;
-using Bait_Car.Handlers;
+using Rage;
+using RAGENativeUI;
+using RAGENativeUI.Elements;
 
-namespace Bait_Car
+namespace Bait_Car.Handlers
 {
-    using Rage;
-    using RAGENativeUI;
-    using RAGENativeUI.Elements;
-
-    public class Menu
+    public class MenuHandler
     {
         private ConfigHandler _configHandler;
-        private GameFiber _menusProcessFiber;
+        private StateHandler _stateHandler;
+        private bool _inOptions;
+        
+        private MenuPool _menuPool;
+
         private UIMenu _mainMenu;
         private UIMenu _carMenu;
         private UIMenu _optionsMenu;
@@ -27,12 +25,11 @@ namespace Bait_Car
         private UIMenuItem _toggleEngine;
         private UIMenuItem _toggleLocks;
 
-        private MenuPool _menuPool;
-
-        public Menu(ConfigHandler configHandler)
+        public MenuHandler(ConfigHandler configHandler, StateHandler stateHandler)
         {
+            LogHandler.Log("Initializing Menu...", LogType.DEBUG);
             _configHandler = configHandler;
-            _menusProcessFiber = new GameFiber(ProcessLoop);
+            _stateHandler = stateHandler;
 
             _menuPool = new MenuPool();
 
@@ -40,9 +37,9 @@ namespace Bait_Car
             _carMenu = new UIMenu($"Bait Car {EntryPoint.Version}", "Car Controls");
             _optionsMenu = new UIMenu($"Bait Car {EntryPoint.Version}", "Options");
 
-            _mainMenu.AddItem(_requestCarVehicleSelector = new UIMenuListItem("Car Selector", "Select the car to spawn",
+            _mainMenu.AddItem(_requestCarVehicleSelector = new UIMenuListItem("Select Car", "Select the car to spawn",
                 new List<string>{"Zentorno", "Carbonizzare", "Banshee", "Coquette", "Comet", "Elegy"}));
-            _mainMenu.AddItem(_requestCarCurrentVehicle = new UIMenuItem("Select Current Vehicle"));
+            _mainMenu.AddItem(_requestCarCurrentVehicle = new UIMenuItem("Select Car You Are In", "Use the vehicle you are currently in as a bait car."));
 
             _carMenu.AddItem(_toggleEngine = new UIMenuItem("Toggle Engine"));
             _carMenu.AddItem(_toggleLocks = new UIMenuItem("Toggle Locks"));
@@ -67,12 +64,20 @@ namespace Bait_Car
 
             _menuPool.Add(_mainMenu);
             _menuPool.Add(_carMenu);
-            _menuPool.Add(_optionsMenu);
         }
 
         public void OnItemSelect(UIMenu sender, UIMenuItem selectedItem, int index)
         {
-            
+            if (selectedItem == _requestCarVehicleSelector)
+            {
+                LogHandler.Log(_requestCarVehicleSelector.SelectedItem.DisplayText + " Selected");
+                _stateHandler.State = State.DrivingToPlayer;
+            }
+            else if (selectedItem == _requestCarCurrentVehicle && Game.LocalPlayer.Character.IsInAnyVehicle(true))
+            {
+                LogHandler.Log(Game.LocalPlayer.Character.CurrentVehicle.Model.Name + " Selected");
+                _stateHandler.State = State.PlayerParking;
+            }
         }
 
         public void OnItemChange(UIMenu sender, int index)
@@ -90,19 +95,31 @@ namespace Bait_Car
 
         }
 
-        public void ProcessLoop()
+        public void Update()
         {
-            while (true)
+            if (Game.IsKeyDown(_configHandler.GetKey("Keys", "OpenMenu", Keys.F7)) && !_menuPool.IsAnyMenuOpen())
             {
-                GameFiber.Yield();
-
-                if (Game.IsKeyDown(_configHandler.GetKey("Keys", "OpenMenu", Keys.F7)) && !_menuPool.IsAnyMenuOpen())
+                switch (_stateHandler.State)
                 {
-                    _mainMenu.Visible = !_mainMenu.Visible;
+                    case State.None:
+                        if (!_inOptions)
+                            _mainMenu.Visible = !_mainMenu.Visible;
+                        else
+                            _optionsMenu.Visible = !_optionsMenu.Visible;
+                        break;
+                    default:
+                        _carMenu.Visible = !_carMenu.Visible;
+                        break;
                 }
 
-                _menuPool.ProcessMenus();
             }
+
+            if (_mainMenu.Visible)
+            {
+                _requestCarCurrentVehicle.Enabled = Game.LocalPlayer.Character.IsInAnyVehicle(true);
+            }
+
+            _menuPool.ProcessMenus();
         }
     }
 }
