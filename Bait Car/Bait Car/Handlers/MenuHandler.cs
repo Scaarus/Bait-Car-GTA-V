@@ -13,7 +13,6 @@ namespace Bait_Car.Handlers
     {
         private readonly ConfigHandler _configHandler;
         private readonly StateHandler _stateHandler;
-        private bool _inOptions;
         
         private readonly MenuPool _menuPool;
 
@@ -63,7 +62,6 @@ namespace Bait_Car.Handlers
 
             _mainMenu.RefreshIndex();
             _mainMenu.OnItemSelect += OnItemSelect;
-            _mainMenu.OnIndexChange += OnItemChange;
             #endregion
 
             #region CarMenu
@@ -75,7 +73,6 @@ namespace Bait_Car.Handlers
             _carMenu.RefreshIndex();
             _carMenu.OnItemSelect += OnItemSelect;
             _carMenu.OnListChange += OnListChange;
-            _carMenu.OnIndexChange += OnItemChange;
             #endregion
 
             _menuPool = new MenuPool {_mainMenu, _carMenu};
@@ -113,12 +110,22 @@ namespace Bait_Car.Handlers
 
             _optionsMenu.AddItem(_optionRevert = new UIMenuItem("Revert Changes") { BackColor = Color.RoyalBlue });
             _optionsMenu.AddItem(_optionSave = new UIMenuItem("Save Changes") { BackColor = Color.RoyalBlue });
-
+           
             _optionsMenu.RefreshIndex();
             _optionsMenu.OnItemSelect += OnItemSelect;
             _optionsMenu.OnListChange += OnListChange;
-            _optionsMenu.OnIndexChange += OnItemChange;
-            _optionsMenu.OnCheckboxChange += OnCheckboxChange;
+
+            _optionsKeysMenu.AddItem(_optionKeyOpenMenu = new UIMenuItem("Open Main Menu", "The keybind to open this menu."));
+            _optionsKeysMenu.AddItem(_optionKeyKillSwitch = new UIMenuItem("Kill Switch", "The keybind to shut off the bait car engine."));
+            _optionsKeysMenu.AddItem(_optionKeyLockDoors = new UIMenuItem("Lock Doors", "The keybind to lock the bait car doors."));
+            _optionsKeysMenu.RefreshIndex();
+            _optionsKeysMenu.OnItemSelect += OnItemSelect;
+
+            _optionsButtonsMenu.AddItem(_optionButtonOpenMenu = new UIMenuItem("Open Main Menu", "The button to open this menu."));
+            _optionsButtonsMenu.AddItem(_optionButtonKillSwitch = new UIMenuItem("Kill Switch", "The button to shut off the bait car engine."));
+            _optionsButtonsMenu.AddItem(_optionButtonLockDoors = new UIMenuItem("Lock Doors", "The button to lock the bait car doors."));
+            _optionsButtonsMenu.RefreshIndex();
+            _optionsButtonsMenu.OnItemSelect += OnItemSelect;
 
             SetOptionsValues();
             #endregion
@@ -132,45 +139,60 @@ namespace Bait_Car.Handlers
             _optionMaxSearchRadius.Index = _configHandler.GetInteger("Options", "MaxSearchRadius", 100) / 10 - 1;
             _optionHardcore.Checked = _configHandler.GetBoolean("Options", "Hardcore");
             _optionDebug.Checked = _configHandler.GetBoolean("Options", "Debug");
+            _optionKeyOpenMenu.SetRightLabel(_configHandler.GetValue("Keys", "OpenMenu", "F7"));
+            _optionKeyKillSwitch.SetRightLabel(_configHandler.GetValue("Keys", "KillSwitch", "K"));
+            _optionKeyLockDoors.SetRightLabel(_configHandler.GetValue("Keys", "LockDoors", "L"));
+            _optionButtonOpenMenu.SetRightLabel(_configHandler.GetValue("Buttons", "OpenMenu", "None"));
+            _optionButtonKillSwitch.SetRightLabel(_configHandler.GetValue("Buttons", "KillSwitch", "None"));
+            _optionButtonLockDoors.SetRightLabel(_configHandler.GetValue("Buttons", "LockDoors", "None"));
         }
 
         public void OnItemSelect(UIMenu sender, UIMenuItem selectedItem, int index)
         {
-            if (selectedItem == _requestCarVehicleSelector)
-            {
-                LogHandler.Log(_requestCarVehicleSelector.SelectedItem.DisplayText + " Selected", LogType.DEBUG);
-                _stateHandler.State = State.DrivingToPlayer;
-                _menuPool.CloseAllMenus();
-                _carMenu.Visible = !_carMenu.Visible;
-            }
-            else if (selectedItem == _requestCarCurrentVehicle && Game.LocalPlayer.Character.IsInAnyVehicle(true))
-            {
-                LogHandler.Log(Game.LocalPlayer.Character.CurrentVehicle.Model.Name + " Selected", LogType.DEBUG);
-                _stateHandler.State = State.PlayerParking;
-                _menuPool.CloseAllMenus();
-                _carMenu.Visible = !_carMenu.Visible;
-            }
-            else if (selectedItem == _cancelCar)
-            {
-                LogHandler.Log("Ending bait car session");
-                // TODO: End session
-                _stateHandler.State = State.None;
-                _menuPool.CloseAllMenus();
-            }
-            else if (selectedItem == _toggleEngine)
-            {
-                // TODO: Shut off bait car engine
-            }
-            else if (selectedItem == _toggleLocks)
-            {
-                // TODO: Lock bait car doors
-            }
+            LogHandler.Log("Sender: " + sender.Subtitle, LogType.DEBUG);
+            LogHandler.Log("selectedItem: " + selectedItem.Text, LogType.DEBUG);
 
-            if (sender == _optionsMenu)
+            if (sender == _mainMenu)
+            {
+                if (selectedItem == _requestCarVehicleSelector)
+                {
+                    LogHandler.Log(_requestCarVehicleSelector.SelectedItem.DisplayText + " Selected", LogType.DEBUG);
+                    _stateHandler.State = State.DrivingToPlayer;
+                    _menuPool.CloseAllMenus();
+                    _carMenu.Visible = !_carMenu.Visible;
+                }
+                else if (selectedItem == _requestCarCurrentVehicle && Game.LocalPlayer.Character.IsInAnyVehicle(true))
+                {
+                    LogHandler.Log(Game.LocalPlayer.Character.CurrentVehicle.Model.Name + " Selected", LogType.DEBUG);
+                    _stateHandler.State = State.PlayerParking;
+                    _menuPool.CloseAllMenus();
+                    _carMenu.Visible = !_carMenu.Visible;
+                }
+            }
+            else if (sender == _carMenu)
+            {
+                if (selectedItem == _cancelCar)
+                {
+                    LogHandler.Log("Ending bait car session");
+                    // TODO: End session
+                    _stateHandler.State = State.None;
+                    _menuPool.CloseAllMenus();
+                }
+                else if (selectedItem == _toggleEngine)
+                {
+                    // TODO: Shut off bait car engine
+                }
+                else if (selectedItem == _toggleLocks)
+                {
+                    // TODO: Lock bait car doors
+                }
+            }
+            else if (sender == _optionsMenu)
             {
                 if (selectedItem == _optionSave)
                 {
                     LogHandler.Log("Saving options...");
+                    // TODO: Save changes
                 }
                 else if (selectedItem == _optionRevert)
                 {
@@ -178,11 +200,36 @@ namespace Bait_Car.Handlers
                     SetOptionsValues();
                 }
             }
-        }
+            else if (sender == _optionsKeysMenu)
+            {
+                if (selectedItem == _optionKeyOpenMenu)
+                {
 
-        public void OnItemChange(UIMenu sender, int index)
-        {
-            
+                }
+                else if (selectedItem == _optionKeyKillSwitch)
+                {
+
+                }
+                else if (selectedItem == _optionKeyLockDoors)
+                {
+
+                }
+            }
+            else if (sender == _optionsButtonsMenu)
+            {
+                if (selectedItem == _optionButtonOpenMenu)
+                {
+
+                }
+                else if (selectedItem == _optionButtonKillSwitch)
+                {
+
+                }
+                else if (selectedItem == _optionButtonLockDoors)
+                {
+
+                }
+            }
         }
 
         public void OnListChange(UIMenu sender, UIMenuListItem list, int index)
@@ -204,11 +251,6 @@ namespace Bait_Car.Handlers
             }
         }
 
-        public void OnCheckboxChange(UIMenu sender, UIMenuCheckboxItem checkbox, bool Checked)
-        { 
-
-        }
-
         public void Update()
         {
             if (Game.IsKeyDown(_configHandler.GetKey("Keys", "OpenMenu", Keys.F7)) && !_menuPool.IsAnyMenuOpen())
@@ -216,10 +258,7 @@ namespace Bait_Car.Handlers
                 switch (_stateHandler.State)
                 {
                     case State.None:
-                        if (!_inOptions)
-                            _mainMenu.Visible = !_mainMenu.Visible;
-                        else
-                            _optionsMenu.Visible = !_optionsMenu.Visible;
+                        _mainMenu.Visible = !_mainMenu.Visible;
                         break;
                     default:
                         _carMenu.Visible = !_carMenu.Visible;
