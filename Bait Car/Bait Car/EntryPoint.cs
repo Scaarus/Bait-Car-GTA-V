@@ -7,11 +7,17 @@ namespace Bait_Car
     {
         public const string Version = "v0.2 ALPHA";
         public static ConfigHandler Config;
+        public static Menu Menu;
+
 
         public static void Main()
         {
-            LogHandler.Log("Plugin Initializing...", LogType.DEBUG);
+            LogHandler.Log("Initializing...");
             Config = new ConfigHandler();
+            LogHandler.Log("Configuration loaded.");
+            Menu = new Menu(Config);
+            LogHandler.Log("Menu configured and loaded.");
+            LogHandler.Log("Initialization complete.");
         }
     }
 }

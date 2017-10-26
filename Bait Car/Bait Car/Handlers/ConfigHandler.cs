@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Windows.Forms;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -228,6 +229,21 @@ Hardcore=False";
                 return defaultValue;
 
             return (stringValue != "0" && !stringValue.StartsWith("f", true, null));
+        }
+
+        /// <summary>
+        /// Loads a key.
+        /// </summary>
+        /// <param name="section">The section the key is part of.</param>
+        /// <param name="key">They key to load.</param>
+        /// <param name="defaultValue">The value to use if none is found.</param>
+        /// <returns>The value for the given key.</returns>
+        public Keys GetKey(string section, string key, Keys defaultValue = Keys.None)
+        {
+            if (!TryGetValue(section, key, out var stringValue))
+                return defaultValue;
+
+            return Enum.TryParse(stringValue, out Keys keyValue) ? defaultValue : keyValue;
         }
     }
 }
