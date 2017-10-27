@@ -129,7 +129,6 @@ namespace Bait_Car.Handlers
 
             SetOptionsValues();
             #endregion
-
         }
 
         public void SetOptionsValues()
@@ -149,9 +148,6 @@ namespace Bait_Car.Handlers
 
         public void OnItemSelect(UIMenu sender, UIMenuItem selectedItem, int index)
         {
-            LogHandler.Log("Sender: " + sender.Subtitle, LogType.DEBUG);
-            LogHandler.Log("selectedItem: " + selectedItem.Text, LogType.DEBUG);
-
             if (sender == _mainMenu)
             {
                 if (selectedItem == _requestCarVehicleSelector)
@@ -159,14 +155,14 @@ namespace Bait_Car.Handlers
                     LogHandler.Log(_requestCarVehicleSelector.SelectedItem.DisplayText + " Selected", LogType.DEBUG);
                     _stateHandler.State = State.DrivingToPlayer;
                     _menuPool.CloseAllMenus();
-                    _carMenu.Visible = !_carMenu.Visible;
+                    _carMenu.Visible = true;
                 }
                 else if (selectedItem == _requestCarCurrentVehicle && Game.LocalPlayer.Character.IsInAnyVehicle(true))
                 {
                     LogHandler.Log(Game.LocalPlayer.Character.CurrentVehicle.Model.Name + " Selected", LogType.DEBUG);
                     _stateHandler.State = State.PlayerParking;
                     _menuPool.CloseAllMenus();
-                    _carMenu.Visible = !_carMenu.Visible;
+                    _carMenu.Visible = true;
                 }
             }
             else if (sender == _carMenu)
@@ -192,7 +188,21 @@ namespace Bait_Car.Handlers
                 if (selectedItem == _optionSave)
                 {
                     LogHandler.Log("Saving options...");
-                    // TODO: Save changes
+                    if (_configHandler.SetValue("Options", "MinSecondsToWait",
+                            _optionMinSecondsToWait.SelectedValue.ToString()) &&
+                        _configHandler.SetValue("Options", "MaxSecondsToWait",
+                            _optionMaxSecondsToWait.SelectedValue.ToString()) &&
+                        _configHandler.SetValue("Options", "MaxSearchRadius",
+                            _optionMaxSearchRadius.SelectedValue.ToString()) &&
+                        _configHandler.SetValue("Options", "Hardcore", _optionHardcore.Checked.ToString()) &&
+                        _configHandler.SetValue("Options", "Debug", _optionDebug.Checked.ToString()) &&
+                        _configHandler.SetValue("Keys", "OpenMenu", _optionKeyOpenMenu.RightLabel) &&
+                        _configHandler.SetValue("Keys", "KillSwitch", _optionKeyKillSwitch.RightLabel) &&
+                        _configHandler.SetValue("Keys", "LockDoors", _optionKeyLockDoors.RightLabel) &&
+                        _configHandler.SetValue("Buttons", "OpenMenu", _optionKeyOpenMenu.RightLabel) &&
+                        _configHandler.SetValue("Buttons", "KillSwitch", _optionButtonKillSwitch.RightLabel) &&
+                        _configHandler.SetValue("Buttons", "LockDoors", _optionKeyLockDoors.RightLabel))
+                        LogHandler.Log("Saving successful!");
                 }
                 else if (selectedItem == _optionRevert)
                 {
@@ -204,30 +214,30 @@ namespace Bait_Car.Handlers
             {
                 if (selectedItem == _optionKeyOpenMenu)
                 {
-
+                    // TODO: Set up rebinds
                 }
                 else if (selectedItem == _optionKeyKillSwitch)
                 {
-
+                    // TODO: Set up rebinds
                 }
                 else if (selectedItem == _optionKeyLockDoors)
                 {
-
+                    // TODO: Set up rebinds
                 }
             }
             else if (sender == _optionsButtonsMenu)
             {
                 if (selectedItem == _optionButtonOpenMenu)
                 {
-
+                    // TODO: Set up rebinds
                 }
                 else if (selectedItem == _optionButtonKillSwitch)
                 {
-
+                    // TODO: Set up rebinds
                 }
                 else if (selectedItem == _optionButtonLockDoors)
                 {
-
+                    // TODO: Set up rebinds
                 }
             }
         }
