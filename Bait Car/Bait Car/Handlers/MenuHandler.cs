@@ -1,7 +1,9 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
 using Rage;
 using RAGENativeUI;
@@ -15,6 +17,8 @@ namespace Bait_Car.Handlers
         private readonly StateHandler _stateHandler;
         
         private readonly MenuPool _menuPool;
+        public event OnMenuItemSelectedEvent OnMenuItemSelected;
+        public delegate void OnMenuItemSelectedEvent(MenuHandlerEventArgs e);
 
         #region MenuVariables
         private UIMenu _mainMenu;
@@ -55,7 +59,7 @@ namespace Bait_Car.Handlers
             _stateHandler = stateHandler;
 
             #region MainMenu
-            _mainMenu = new UIMenu($"Bait Car {EntryPoint.Version}", "Request a Car");
+            _mainMenu = new UIMenu($"Bait Car {Main.Version}", "Request a Car");
             _mainMenu.AddItem(_requestCarVehicleSelector = new UIMenuListItem("Select Car", "Select the car to spawn",
                 new List<string>{"Zentorno", "Carbonizzare", "Banshee", "Coquette", "Comet", "Elegy"}));
             _mainMenu.AddItem(_requestCarCurrentVehicle = new UIMenuItem("Select Car You Are In", "Use the vehicle you are currently in as a bait car."));
@@ -65,7 +69,7 @@ namespace Bait_Car.Handlers
             #endregion
 
             #region CarMenu
-            _carMenu = new UIMenu($"Bait Car {EntryPoint.Version}", "Car Controls");
+            _carMenu = new UIMenu($"Bait Car {Main.Version}", "Car Controls");
             _carMenu.AddItem(_toggleEngine = new UIMenuItem("Toggle Engine"));
             _carMenu.AddItem(_toggleLocks = new UIMenuItem("Toggle Locks"));
             _carMenu.AddItem(_cancelCar = new UIMenuItem("End Bait Car Session"));
@@ -152,15 +156,15 @@ namespace Bait_Car.Handlers
             {
                 if (selectedItem == _requestCarVehicleSelector)
                 {
-                    LogHandler.Log(_requestCarVehicleSelector.SelectedItem.DisplayText + " Selected", LogType.DEBUG);
-                    _stateHandler.State = State.DrivingToPlayer;
                     _menuPool.CloseAllMenus();
                     _carMenu.Visible = true;
+                    OnMenuItemSelected.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.SpawnVehicle,
+                        _requestCarVehicleSelector.SelectedItem.DisplayText));
                 }
                 else if (selectedItem == _requestCarCurrentVehicle && Game.LocalPlayer.Character.IsInAnyVehicle(true))
                 {
-                    LogHandler.Log(Game.LocalPlayer.Character.CurrentVehicle.Model.Name + " Selected", LogType.DEBUG);
-                    _stateHandler.State = State.PlayerParking;
+                    OnMenuItemSelected.Invoke(
+                        new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.UseCurrentVehicle));
                     _menuPool.CloseAllMenus();
                     _carMenu.Visible = true;
                 }
@@ -169,18 +173,16 @@ namespace Bait_Car.Handlers
             {
                 if (selectedItem == _cancelCar)
                 {
-                    LogHandler.Log("Ending bait car session");
-                    // TODO: End session
-                    _stateHandler.State = State.None;
                     _menuPool.CloseAllMenus();
+                    OnMenuItemSelected.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.EndSession));
                 }
                 else if (selectedItem == _toggleEngine)
                 {
-                    // TODO: Shut off bait car engine
+                    OnMenuItemSelected.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.ToggleEngine));
                 }
                 else if (selectedItem == _toggleLocks)
                 {
-                    // TODO: Lock bait car doors
+                    OnMenuItemSelected.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.ToggleLocks));
                 }
             }
             else if (sender == _optionsMenu)
@@ -282,6 +284,32 @@ namespace Bait_Car.Handlers
             }
 
             _menuPool.ProcessMenus();
+        }
+    }
+
+    public class MenuHandlerEventArgs : EventArgs
+    {
+        public enum EventType
+        {
+            SpawnVehicle,
+            UseCurrentVehicle,
+            ToggleEngine,
+            ToggleLocks,
+            EndSession
+        }
+
+        public EventType Type;
+        public string VehicleType;
+
+        public MenuHandlerEventArgs(EventType type)
+        {
+            Type = type;
+        }
+
+        public MenuHandlerEventArgs(EventType type, string vehicle)
+        {
+            Type = type;
+            VehicleType = vehicle;
         }
     }
 }

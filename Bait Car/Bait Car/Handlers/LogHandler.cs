@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Net;
+using LSPD_First_Response.Mod.API;
+using Rage;
 
-[assembly: Rage.Attributes.Plugin("Bait Car", Description = "Allows user to spawn bait cars and have AI attempt to steal them.", Author = "Scaarus")]
 namespace Bait_Car.Handlers
 {
     public enum LogType
@@ -26,9 +27,9 @@ namespace Bait_Car.Handlers
             // Don't print debug statements if debug mode is disabled
             if (type == LogType.DEBUG && !DebugMode) return;
             
-            // [Timestamp] Bait Car (LogType): Message
-            var final = $"[{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}] Bait Car {EntryPoint.Version} ({Enum.GetName(typeof(LogType), type)}): {message}";
-            Rage.Game.Console.Print(final);
+            // Bait Car (LogType): Message
+            var final = $"Bait Car {Main.Version} ({Enum.GetName(typeof(LogType), type)}): {message}";
+            Game.LogTrivial(final);
         }
     }
 }
