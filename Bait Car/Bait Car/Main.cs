@@ -48,7 +48,7 @@ namespace Bait_Car
                 case MenuHandlerEventArgs.EventType.EndSession:
                     break;
                 default:
-                    LogHandler.Log("Unknown event type: " + e.Type);
+                    LogHandler.Log("Unknown event type: " + e.Type, LogType.ERROR);
                     return;
             }
         }

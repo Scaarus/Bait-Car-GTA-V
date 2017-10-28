@@ -27,8 +27,8 @@ namespace Bait_Car.Handlers
             // Don't print debug statements if debug mode is disabled
             if (type == LogType.DEBUG && !DebugMode) return;
             
-            // Bait Car (LogType): Message
-            var final = $"Bait Car {Main.Version} ({Enum.GetName(typeof(LogType), type)}): {message}";
+            // [LogType] Bait Car: Message
+            var final = $"[{Enum.GetName(typeof(LogType), type)}] Bait Car: {message}";
             Game.LogTrivial(final);
         }
     }
