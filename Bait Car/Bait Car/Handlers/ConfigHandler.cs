@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LSPD_First_Response.Mod;
 
 namespace Bait_Car.Handlers
 {
@@ -78,26 +75,26 @@ Hardcore=False
 // Default: False
 Debug=False";
 
-        private Dictionary<string, string> Options = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> Options = new Dictionary<string, string>();
 
         public ConfigHandler()
         {
-            LogHandler.Log("Starting config handler.", LogType.DEBUG);
+            LogHandler.Log("Starting config handler.", LogType.Debug);
 
             // Create the config file if it doesn't exist
             if (!DoesConfigExist())
             {
-                LogHandler.Log("Config file does not exist.", LogType.DEBUG);
+                LogHandler.Log("Config file does not exist.", LogType.Debug);
                 CreateDefaultFile();
             }
 
-            LogHandler.Log("Found config file. Loading options.", LogType.DEBUG);
+            LogHandler.Log("Found config file. Loading options.", LogType.Debug);
 
             if (!LoadOptions())
             {
                 LogHandler.Log("Unable to load options, using defaults.");
             }
-            LogHandler.Log("Options loaded!", LogType.DEBUG);
+            LogHandler.Log("Options loaded!", LogType.Debug);
         }
 
         /// <summary>
@@ -118,17 +115,17 @@ Debug=False";
         {
             try
             {
-                LogHandler.Log("Creating config file.", LogType.DEBUG);
+                LogHandler.Log("Creating config file.", LogType.Debug);
                 using (var file = new StreamWriter(FilePath, false))
                 {
                     file.Write(DefaultFile);
                 }
-                LogHandler.Log("Config file created successfully.", LogType.DEBUG);
+                LogHandler.Log("Config file created successfully.", LogType.Debug);
             }
             catch (Exception e)
             {
-                LogHandler.Log("Unable to create default file.", LogType.ERROR);
-                LogHandler.Log(e.Message, LogType.DEBUG);
+                LogHandler.Log("Unable to create default file.", LogType.Error);
+                LogHandler.Log(e.Message, LogType.Debug);
             }
         }
 
@@ -176,8 +173,8 @@ Debug=False";
             }
             catch (Exception e)
             {
-                LogHandler.Log("Unable to load the config file.", LogType.ERROR);
-                LogHandler.Log(e.Message, LogType.DEBUG);
+                LogHandler.Log("Unable to load the config file.", LogType.Error);
+                LogHandler.Log(e.Message, LogType.Debug);
             }
             return false;
         }
@@ -274,12 +271,12 @@ Debug=False";
                 }
 
                 var sectionIndex = lines.FindIndex(f => f == $"[{section}]");
-                LogHandler.Log("Section: " + lines[sectionIndex], LogType.DEBUG);
+                LogHandler.Log("Section: " + lines[sectionIndex], LogType.Debug);
                 var keyIndex = lines.FindIndex(sectionIndex, f => f.StartsWith(key));
-                LogHandler.Log("Key: " + lines[keyIndex], LogType.DEBUG);
+                LogHandler.Log("Key: " + lines[keyIndex], LogType.Debug);
 
                 var valueIndex = lines.ElementAt(keyIndex).IndexOf("=", StringComparison.Ordinal) + 1;
-                LogHandler.Log("Value: " + lines[keyIndex].Remove(0, valueIndex), LogType.DEBUG);
+                LogHandler.Log("Value: " + lines[keyIndex].Remove(0, valueIndex), LogType.Debug);
                 lines[keyIndex] = lines.ElementAt(keyIndex).Remove(valueIndex) + value;
 
                 using (var sw = new StreamWriter(FilePath))
@@ -290,8 +287,8 @@ Debug=False";
             }
             catch (Exception e)
             {
-                LogHandler.Log("Unable to load the config file.", LogType.ERROR);
-                LogHandler.Log(e.Message, LogType.DEBUG);
+                LogHandler.Log("Unable to load the config file.", LogType.Error);
+                LogHandler.Log(e.Message, LogType.Debug);
             }
             return false;
         }

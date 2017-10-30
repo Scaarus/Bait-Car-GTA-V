@@ -1,9 +1,7 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Reflection;
 using System.Windows.Forms;
 using Rage;
 using RAGENativeUI;
@@ -21,35 +19,35 @@ namespace Bait_Car.Handlers
         public delegate void OnMenuItemSelectedEvent(MenuHandlerEventArgs e);
 
         #region MenuVariables
-        private UIMenu _mainMenu;
-        private UIMenu _carMenu;
-        private UIMenu _optionsMenu;
-        private UIMenu _optionsKeysMenu;
-        private UIMenu _optionsButtonsMenu;
+        private readonly UIMenu _mainMenu;
+        private readonly UIMenu _carMenu;
+        private readonly UIMenu _optionsMenu;
+        private readonly UIMenu _optionsKeysMenu;
+        private readonly UIMenu _optionsButtonsMenu;
 
-        private UIMenuListItem _requestCarVehicleSelector;
-        private UIMenuItem _requestCarCurrentVehicle;
+        private readonly UIMenuListItem _requestCarVehicleSelector;
+        private readonly UIMenuItem _requestCarCurrentVehicle;
 
-        private UIMenuItem _cancelCar;
-        private UIMenuItem _toggleEngine;
-        private UIMenuItem _toggleLocks;
+        private readonly UIMenuItem _cancelCar;
+        private readonly UIMenuItem _toggleEngine;
+        private readonly UIMenuItem _toggleLocks;
 
-        private UIMenuItem _optionKeyOpenMenu;
-        private UIMenuItem _optionKeyKillSwitch;
-        private UIMenuItem _optionKeyLockDoors;
+        private readonly UIMenuItem _optionKeyOpenMenu;
+        private readonly UIMenuItem _optionKeyKillSwitch;
+        private readonly UIMenuItem _optionKeyLockDoors;
 
-        private UIMenuItem _optionButtonOpenMenu;
-        private UIMenuItem _optionButtonKillSwitch;
-        private UIMenuItem _optionButtonLockDoors;
+        private readonly UIMenuItem _optionButtonOpenMenu;
+        private readonly UIMenuItem _optionButtonKillSwitch;
+        private readonly UIMenuItem _optionButtonLockDoors;
 
-        private UIMenuListItem _optionMinSecondsToWait;
-        private UIMenuListItem _optionMaxSecondsToWait;
-        private UIMenuListItem _optionMaxSearchRadius;
-        private UIMenuCheckboxItem _optionHardcore;
-        private UIMenuCheckboxItem _optionDebug;
+        private readonly UIMenuListItem _optionMinSecondsToWait;
+        private readonly UIMenuListItem _optionMaxSecondsToWait;
+        private readonly UIMenuListItem _optionMaxSearchRadius;
+        private readonly UIMenuCheckboxItem _optionHardcore;
+        private readonly UIMenuCheckboxItem _optionDebug;
 
-        private UIMenuItem _optionRevert;
-        private UIMenuItem _optionSave;
+        private readonly UIMenuItem _optionRevert;
+        private readonly UIMenuItem _optionSave;
         #endregion
 
         public MenuHandler(ConfigHandler configHandler, StateHandler stateHandler)
@@ -59,24 +57,17 @@ namespace Bait_Car.Handlers
             _stateHandler = stateHandler;
 
             #region MainMenu
-            _mainMenu = new UIMenu($"Bait Car {Main.Version}", "Request a Car");
+            _mainMenu = new UIMenu($"Bait Car {EntryPoint.Version}", "Request a Car");
             _mainMenu.AddItem(_requestCarVehicleSelector = new UIMenuListItem("Select Car", "Select the car to spawn",
                 new List<string>{"Zentorno", "Carbonizzare", "Banshee", "Coquette", "Comet", "Elegy"}));
             _mainMenu.AddItem(_requestCarCurrentVehicle = new UIMenuItem("Select Car You Are In", "Use the vehicle you are currently in as a bait car."));
-
-            _mainMenu.RefreshIndex();
-            _mainMenu.OnItemSelect += OnItemSelect;
             #endregion
 
             #region CarMenu
-            _carMenu = new UIMenu($"Bait Car {Main.Version}", "Car Controls");
+            _carMenu = new UIMenu($"Bait Car {EntryPoint.Version}", "Car Controls");
             _carMenu.AddItem(_toggleEngine = new UIMenuItem("Toggle Engine"));
             _carMenu.AddItem(_toggleLocks = new UIMenuItem("Toggle Locks"));
             _carMenu.AddItem(_cancelCar = new UIMenuItem("End Bait Car Session"));
-
-            _carMenu.RefreshIndex();
-            _carMenu.OnItemSelect += OnItemSelect;
-            _carMenu.OnListChange += OnListChange;
             #endregion
 
             _menuPool = new MenuPool {_mainMenu, _carMenu};
@@ -114,25 +105,30 @@ namespace Bait_Car.Handlers
 
             _optionsMenu.AddItem(_optionRevert = new UIMenuItem("Revert Changes") { BackColor = Color.RoyalBlue });
             _optionsMenu.AddItem(_optionSave = new UIMenuItem("Save Changes") { BackColor = Color.RoyalBlue });
-           
-            _optionsMenu.RefreshIndex();
-            _optionsMenu.OnItemSelect += OnItemSelect;
-            _optionsMenu.OnListChange += OnListChange;
 
             _optionsKeysMenu.AddItem(_optionKeyOpenMenu = new UIMenuItem("Open Main Menu", "The keybind to open this menu."));
             _optionsKeysMenu.AddItem(_optionKeyKillSwitch = new UIMenuItem("Kill Switch", "The keybind to shut off the bait car engine."));
             _optionsKeysMenu.AddItem(_optionKeyLockDoors = new UIMenuItem("Lock Doors", "The keybind to lock the bait car doors."));
-            _optionsKeysMenu.RefreshIndex();
-            _optionsKeysMenu.OnItemSelect += OnItemSelect;
 
             _optionsButtonsMenu.AddItem(_optionButtonOpenMenu = new UIMenuItem("Open Main Menu", "The button to open this menu."));
             _optionsButtonsMenu.AddItem(_optionButtonKillSwitch = new UIMenuItem("Kill Switch", "The button to shut off the bait car engine."));
             _optionsButtonsMenu.AddItem(_optionButtonLockDoors = new UIMenuItem("Lock Doors", "The button to lock the bait car doors."));
-            _optionsButtonsMenu.RefreshIndex();
-            _optionsButtonsMenu.OnItemSelect += OnItemSelect;
 
             SetOptionsValues();
             #endregion
+
+            _mainMenu.RefreshIndex();
+            _carMenu.RefreshIndex();
+            _optionsMenu.RefreshIndex();
+            _optionsKeysMenu.RefreshIndex();
+            _optionsButtonsMenu.RefreshIndex();
+            _mainMenu.OnItemSelect += OnItemSelect;
+            _carMenu.OnItemSelect += OnItemSelect;
+            _carMenu.OnListChange += OnListChange;
+            _optionsMenu.OnItemSelect += OnItemSelect;
+            _optionsMenu.OnListChange += OnListChange;
+            _optionsKeysMenu.OnItemSelect += OnItemSelect;
+            _optionsButtonsMenu.OnItemSelect += OnItemSelect;
         }
 
         public void SetOptionsValues()
@@ -158,12 +154,12 @@ namespace Bait_Car.Handlers
                 {
                     _menuPool.CloseAllMenus();
                     _carMenu.Visible = true;
-                    OnMenuItemSelected.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.SpawnVehicle,
+                    OnMenuItemSelected?.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.SpawnVehicle,
                         _requestCarVehicleSelector.SelectedItem.DisplayText));
                 }
                 else if (selectedItem == _requestCarCurrentVehicle && Game.LocalPlayer.Character.IsInAnyVehicle(true))
                 {
-                    OnMenuItemSelected.Invoke(
+                    OnMenuItemSelected?.Invoke(
                         new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.UseCurrentVehicle));
                     _menuPool.CloseAllMenus();
                     _carMenu.Visible = true;
@@ -174,15 +170,15 @@ namespace Bait_Car.Handlers
                 if (selectedItem == _cancelCar)
                 {
                     _menuPool.CloseAllMenus();
-                    OnMenuItemSelected.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.EndSession));
+                    OnMenuItemSelected?.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.EndSession));
                 }
                 else if (selectedItem == _toggleEngine)
                 {
-                    OnMenuItemSelected.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.ToggleEngine));
+                    OnMenuItemSelected?.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.ToggleEngine));
                 }
                 else if (selectedItem == _toggleLocks)
                 {
-                    OnMenuItemSelected.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.ToggleLocks));
+                    OnMenuItemSelected?.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.ToggleLocks));
                 }
             }
             else if (sender == _optionsMenu)
@@ -208,7 +204,7 @@ namespace Bait_Car.Handlers
                 }
                 else if (selectedItem == _optionRevert)
                 {
-                    LogHandler.Log("Options reverted.", LogType.DEBUG);
+                    LogHandler.Log("Options reverted.", LogType.Debug);
                     SetOptionsValues();
                 }
             }
@@ -267,6 +263,7 @@ namespace Bait_Car.Handlers
         {
             if (Game.IsKeyDown(_configHandler.GetKey("Keys", "OpenMenu", Keys.F7)) && !_menuPool.IsAnyMenuOpen())
             {
+                LogHandler.Log("Key pressed");
                 switch (_stateHandler.State)
                 {
                     case State.None:

@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Net;
-using LSPD_First_Response.Mod.API;
 using Rage;
 
 namespace Bait_Car.Handlers
 {
     public enum LogType
     {
-        INFO,
-        ERROR,
-        DEBUG
+        Info,
+        Error,
+        Debug
     };
 
 
@@ -22,13 +20,13 @@ namespace Bait_Car.Handlers
         private const bool DebugMode = false;
 #endif
 
-        public static void Log(string message, LogType type = LogType.INFO)
+        public static void Log(string message, LogType type = LogType.Info)
         {
             // Don't print debug statements if debug mode is disabled
-            if (type == LogType.DEBUG && !DebugMode) return;
+            if (type == LogType.Debug && !DebugMode) return;
             
             // [LogType] Bait Car: Message
-            var final = $"[{Enum.GetName(typeof(LogType), type)}] Bait Car: {message}";
+            var final = $"<{Enum.GetName(typeof(LogType), type)}> {message}";
             Game.LogTrivial(final);
         }
     }
