@@ -12,6 +12,7 @@
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <AssemblyVersion>0.10.31.22</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -74,9 +75,13 @@
     <Compile Include="Handlers\ConfigHandler.cs" />
     <Compile Include="Handlers\LogHandler.cs" />
     <Compile Include="Handlers\MenuHandler.cs" />
+    <Compile Include="Handlers\ScenarioHandler.cs" />
     <Compile Include="Handlers\StateHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="State.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="UIComponents\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -10,25 +10,28 @@ namespace Bait_Car
     public class EntryPoint
     {
         public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        public static ConfigHandler Config;
-        public static MenuHandler Menu;
-        public static StateHandler State = new StateHandler { State = Bait_Car.State.None };
-        public static GameFiber Fiber;
+        public static readonly string Name = "Bait Car";
+
+        private static ConfigHandler _config;
+        private static MenuHandler _menu;
+        private static readonly StateHandler State = new StateHandler { State = Bait_Car.State.None };
+        private static GameFiber _fiber;
+        private static ScenarioHandler _scenario;
 
         public static void Main()
         {
-            LogHandler.Log("Initializing...");
-            Config = new ConfigHandler();
+            LogHandler.Log($"Initializing Bait Car Version {Version}...");
+            _config = new ConfigHandler();
             LogHandler.Log("Configuration loaded.");
-            Menu = new MenuHandler(Config, State);
+            _menu = new MenuHandler(_config, State);
             LogHandler.Log("Menu configured and loaded.");
-            Menu.OnMenuItemSelected += MenuEventHandler;
+            _menu.OnMenuItemSelected += MenuEventHandler;
             LogHandler.Log("Events registered.");
             LogHandler.Log("Initialization complete.");
             Game.DisplayNotification($"Bait Car {Version} Loaded!");
 
-            Fiber = new GameFiber(Update);
-            Fiber.Start();
+            _fiber = new GameFiber(Update);
+            _fiber.Start();
         }
 
         private static void MenuEventHandler(MenuHandlerEventArgs e)
@@ -36,18 +39,21 @@ namespace Bait_Car
             switch (e.Type)
             {
                 case MenuHandlerEventArgs.EventType.SpawnVehicle:
+                    _scenario = new ScenarioHandler(_config, State, e.VehicleType);
                     State.State = Bait_Car.State.DrivingToPlayer;
                     break;
                 case MenuHandlerEventArgs.EventType.UseCurrentVehicle:
                     State.State = Bait_Car.State.PlayerParking;
                     break;
                 case MenuHandlerEventArgs.EventType.ToggleEngine:
-                    State.State = Bait_Car.State.SuspectStopped;
+                    _scenario.ToggleEngine();
                     break;
                 case MenuHandlerEventArgs.EventType.ToggleLocks:
+                    _scenario.ToggleLocks();
                     break;
                 case MenuHandlerEventArgs.EventType.EndSession:
-                    State.State = Bait_Car.State.SuspectStopped;
+                    _scenario.CleanupSafe();
+                    State.State = Bait_Car.State.None;
                     break;
                 default:
                     LogHandler.Log("Unknown event type: " + e.Type, LogType.Error);
@@ -59,9 +65,10 @@ namespace Bait_Car
         {
             while (true)
             {
-                Menu.Update();
+                _menu?.Update();
+                _scenario?.Update();
 
-                if (State.State == Bait_Car.State.SuspectStopped)
+                if (State?.State == Bait_Car.State.SuspectStopped)
                 {
                     State.State = Bait_Car.State.None;
                     break;
@@ -70,9 +77,12 @@ namespace Bait_Car
             }
         }
 
-        public static void OnUnload()
+        public static void OnUnload(bool isTerminating)
         {
-            throw new NotImplementedException();
+            if (isTerminating)
+                _scenario?.Cleanup();
+            else
+                _scenario?.CleanupSafe();
         }
     }
 }

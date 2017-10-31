@@ -11,7 +11,7 @@ namespace Bait_Car.Handlers
     /// </summary>
     public class ConfigHandler
     {
-        private const string FilePath = @"Plugins\LSPDFR\BaitCar.ini";
+        private const string FilePath = @"Plugins\BaitCar.ini";
 
         private const string DefaultFile =
             @"// Set any keybind to 'None' to disable that key
