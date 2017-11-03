@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Rage;
-using TaskStatus = Rage.TaskStatus;
 
 namespace Bait_Car.Handlers
 {
@@ -18,6 +13,7 @@ namespace Bait_Car.Handlers
         public Ped PoliceDriver { get; private set; }
         public Ped TheifDriver { get; private set; }
         public Blip CarBlip { get; private set; }
+        public Blip PedBlip { get; private set; }
 
         private ConfigHandler config;
         private StateHandler state;
@@ -41,35 +37,40 @@ namespace Bait_Car.Handlers
             switch (carToSpawn)
             {
                 case "RANDOM":
-                    Car = new Vehicle(m => !m.IsEmergencyVehicle, World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
+                    Car = new Vehicle(m => !m.IsEmergencyVehicle && !m.IsLawEnforcementVehicle && m.IsCar,
+                        World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
                     {
                         IsPersistent = true
                     };
                     SpawnDriver();
                     break;
                 case "CARBONIZZARE":
-                    Car = new Vehicle(new Model(carToSpawn), World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
+                    Car = new Vehicle(new Model(carToSpawn),
+                        World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
                     {
                         IsPersistent = true
                     };
                     SpawnDriver();
                     break;
                 case "COMET":
-                    Car = new Vehicle(new Model("COMET2"), World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
+                    Car = new Vehicle(new Model("COMET2"),
+                        World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
                     {
                         IsPersistent = true
                     };
                     SpawnDriver();
                     break;
                 case "BALLER":
-                    Car = new Vehicle(new Model(carToSpawn), World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
+                    Car = new Vehicle(new Model(carToSpawn),
+                        World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
                     {
                         IsPersistent = true
                     };
                     SpawnDriver();
                     break;
                 case "DOMINATOR":
-                    Car = new Vehicle(new Model(carToSpawn), World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
+                    Car = new Vehicle(new Model(carToSpawn),
+                        World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
                     {
                         IsPersistent = true
                     };
@@ -94,6 +95,7 @@ namespace Bait_Car.Handlers
             };
             // Add our blip so the player knows where the vehicle is
             CarBlip = new Blip(Car) {Color = Color.Yellow};
+            PedBlip = new Blip(PoliceDriver) {Color = Color.Blue};
 
             BringVehicleToPlayer();
         }
@@ -122,6 +124,7 @@ namespace Bait_Car.Handlers
             if (PoliceDriver == null || !PoliceDriver.Exists()) return;
             PoliceDriver.Tasks.Wander();
             PoliceDriver.IsPersistent = false;
+            PedBlip.Delete();
         }
 
         public void Update()
@@ -134,6 +137,7 @@ namespace Bait_Car.Handlers
                         // Teleport the driver closer and allow them to do U-turns
                         PoliceDriver.Tasks.ClearImmediately();
                         Car.Position = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(50f));
+                        PoliceDriver.Tasks.EnterVehicle(Car, 1000, -1, EnterVehicleFlags.WarpIn).WaitForCompletion();
                         PoliceDriver.Tasks.DriveToPosition(Car, Game.LocalPlayer.Character.Position, 16f,
                             VehicleDrivingFlags.AllowMedianCrossing, 10f);
                     }
@@ -147,7 +151,8 @@ namespace Bait_Car.Handlers
                     }
 
                     // Exit the car and approch the player
-                    if (Car.DistanceTo(Game.LocalPlayer.Character.Position) <= 10f)
+                    if (Car.Exists() && PoliceDriver.Exists() &&
+                        Car.DistanceTo(Game.LocalPlayer.Character.Position) <= 10f)
                     {
                         PoliceDriver.Tasks.ClearImmediately();
                         PoliceDriver.Tasks.LeaveVehicle(Car, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
@@ -161,7 +166,8 @@ namespace Bait_Car.Handlers
                 case State.PlayerParking:
                     // The player isn't in a car and their last car was the bait car
                     // Assume the player move the car
-                    if (!Game.LocalPlayer.Character.IsInAnyVehicle(true) && Game.LocalPlayer.Character.LastVehicle == Car)
+                    if (!Game.LocalPlayer.Character.IsInAnyVehicle(true) &&
+                        Game.LocalPlayer.Character.LastVehicle == Car)
                     {
                         // Restart our timer to be reused
                         timer.Restart();
@@ -177,7 +183,9 @@ namespace Bait_Car.Handlers
                     // Find a random ped to take the car
                     // Ped cannot be in car
                     TheifDriver = World.EnumeratePeds()
-                        .FirstOrDefault(f => !f.IsInAnyVehicle(true) && f.IsHuman && !f.IsLocalPlayer && f.TravelDistanceTo(Car.Position) < 50f);
+                        .FirstOrDefault(f =>
+                            !f.IsInAnyVehicle(true) && f.IsHuman && !f.IsLocalPlayer &&
+                            f.TravelDistanceTo(Car.Position) < 50f);
 
                     // If we don't find a suitable ped, tell the user to find a new location
                     if (TheifDriver == null)
@@ -185,6 +193,55 @@ namespace Bait_Car.Handlers
                         if (!config.GetBoolean("Options", "Hardcore"))
                             Game.DisplayNotification("Nobody is taking the bait. Find a more populated area.");
                         state.State = State.PlayerParking;
+                    }
+
+                    PedBlip = new Blip(TheifDriver) { Color = Color.Red };
+
+                    if (TheifDriver != null && TheifDriver.Exists())
+                    {
+                        // Clear the driver's tasks
+                        TheifDriver.Tasks.ClearImmediately();
+                        // Make them face the car (so we can have a proper heading for the next commmand
+                        TheifDriver.Face(Car.Position);
+                        // Stand away fromt the vehicle
+                        TheifDriver.Tasks.GoToOffsetFromEntity(Car, 20000, 10, TheifDriver.Heading, 2)
+                            .WaitForCompletion(20000);
+                    }
+
+                    // Approach vehicle & look around
+                    if (TheifDriver != null && TheifDriver.Exists())
+                    {
+                        if (TheifDriver.IsFemale)
+                            TheifDriver.Tasks.PlayAnimation("amb@code_human_wander_idles@female@idle_a",
+                                "idle_c_lookaround", 5000, 1000, 1000, 0, AnimationFlags.None);
+                        else
+                            TheifDriver.Tasks.PlayAnimation("amb@code_human_wander_idles@male@idle_b",
+                                "idle_e_lookaround", 5000, 1000, 1000, 0, AnimationFlags.None);
+
+                        // The player is too close to the car
+                        if (TheifDriver.DistanceTo(Game.LocalPlayer.Character.Position) < 25f)
+                        {
+                            // Reset our ped
+                            TheifDriver.Tasks.ClearImmediately();
+                            TheifDriver.Tasks.Wander();
+                            TheifDriver = null;
+
+                            // Break out and restart the loop so we get a new ped
+                            break;
+                        }
+                    }
+
+                    // The theif is near the car and done a check for the player.
+                    // Get in the vehicle and drive off
+                    // TODO: Pick where the driver goes
+                    // Chop shop?
+                    // Their home?
+                    // Just a joy ride?
+                    if (TheifDriver != null && TheifDriver.Exists())
+                    {
+                        TheifDriver.Tasks.ClearImmediately();
+                        TheifDriver.Tasks.EnterVehicle(Car, 10000, -1, EnterVehicleFlags.None).WaitForCompletion();
+                        TheifDriver.Tasks.CruiseWithVehicle(Car, 50, VehicleDrivingFlags.Emergency);
                     }
                     break;
             }
