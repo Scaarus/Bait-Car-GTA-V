@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using LSPD_First_Response.Mod.API;
 using Rage;
 
 namespace Bait_Car.Handlers
@@ -15,16 +17,19 @@ namespace Bait_Car.Handlers
         public Blip CarBlip { get; private set; }
         public Blip PedBlip { get; private set; }
 
-        private ConfigHandler config;
-        private StateHandler state;
-        private Stopwatch timer;
-        private int timeToWait;
+        private readonly ConfigHandler _config;
+        private readonly StateHandler _state;
+        private readonly Stopwatch _timer;
+        private int _timeToWait;
+        private bool _engineOff = false;
+        private readonly List<string> _bannedCars = new List<string> {"RUINER3", "MONSTER", "MARSHALL"};
+        private LHandle _pursuitHandle;
 
         public ScenarioHandler(ConfigHandler configHandler, StateHandler stateHandler, string carToSpawn)
         {
-            timer = new Stopwatch();
-            config = configHandler;
-            state = stateHandler;
+            _timer = new Stopwatch();
+            _config = configHandler;
+            _state = stateHandler;
             SpawnVehicle(carToSpawn.ToUpper());
         }
 
@@ -37,7 +42,7 @@ namespace Bait_Car.Handlers
             switch (carToSpawn)
             {
                 case "RANDOM":
-                    Car = new Vehicle(m => !m.IsEmergencyVehicle && !m.IsLawEnforcementVehicle && m.IsCar,
+                    Car = new Vehicle(m => !m.IsEmergencyVehicle && !m.IsLawEnforcementVehicle && m.IsCar && !_bannedCars.Contains(m.Name),
                         World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(300f)))
                     {
                         IsPersistent = true
@@ -78,6 +83,8 @@ namespace Bait_Car.Handlers
                     break;
                 case "CURRENT":
                     Car = Game.LocalPlayer.Character.CurrentVehicle;
+                    Car.IsPersistent = true;
+                    _state.State = State.PlayerParking;
                     break;
             }
         }
@@ -112,8 +119,8 @@ namespace Bait_Car.Handlers
                 PoliceDriver.Tasks.DriveToPosition(Car, Game.LocalPlayer.Character.Position, 16f,
                     VehicleDrivingFlags.Normal, 10f);
 
-                state.State = State.DrivingToPlayer;
-                timer.Start();
+                _state.State = State.DrivingToPlayer;
+                _timer.Start();
             }
             else
                 LogHandler.Log("Driver or Car doesn't exist!", LogType.Error);
@@ -129,10 +136,10 @@ namespace Bait_Car.Handlers
 
         public void Update()
         {
-            switch (state.State)
+            switch (_state.State)
             {
                 case State.DrivingToPlayer:
-                    if (Game.IsKeyDown(Keys.Y))
+                    if (Game.IsShiftKeyDownRightNow && Game.IsKeyDown(Keys.Y))
                     {
                         // Teleport the driver closer and allow them to do U-turns
                         PoliceDriver.Tasks.ClearImmediately();
@@ -143,11 +150,11 @@ namespace Bait_Car.Handlers
                     }
 
                     // Display the warp notification
-                    if (timer.Elapsed.TotalSeconds > 30)
+                    if (_timer.Elapsed.TotalSeconds > 30)
                     {
                         Game.DisplayNotification(
                             "Your bait car is stuck in traffic. Press 'Shift' + 'Y' to warp it closer.");
-                        timer.Stop();
+                        _timer.Stop();
                     }
 
                     // Exit the car and approch the player
@@ -160,7 +167,7 @@ namespace Bait_Car.Handlers
                             .WaitForCompletion();
                         Game.DisplaySubtitle("Here is the car you requested, Sir.");
                         DisposePoliceDriver();
-                        state.State = State.PlayerParking;
+                        _state.State = State.PlayerParking;
                     }
                     break;
                 case State.PlayerParking:
@@ -170,16 +177,16 @@ namespace Bait_Car.Handlers
                         Game.LocalPlayer.Character.LastVehicle == Car)
                     {
                         // Restart our timer to be reused
-                        timer.Restart();
+                        _timer.Restart();
                         // Pick the time we should wait before the theif steals the vehicle
-                        timeToWait = new Random().Next(config.GetInteger("Options", "MinSecondsToWait", 30),
-                            config.GetInteger("Options", "MaxSecondToWait", 120));
+                        _timeToWait = new Random().Next(_config.GetInteger("Options", "MinSecondsToWait", 30),
+                            _config.GetInteger("Options", "MaxSecondToWait", 120));
                         // Update our state
-                        state.State = State.WaitingForTheif;
+                        _state.State = State.WaitingForTheif;
                     }
                     break;
                 case State.WaitingForTheif:
-                    if (timer.Elapsed.TotalSeconds < timeToWait) break;
+                    if (_timer.Elapsed.TotalSeconds < _timeToWait) break;
                     // Find a random ped to take the car
                     // Ped cannot be in car
                     TheifDriver = World.EnumeratePeds()
@@ -190,9 +197,9 @@ namespace Bait_Car.Handlers
                     // If we don't find a suitable ped, tell the user to find a new location
                     if (TheifDriver == null)
                     {
-                        if (!config.GetBoolean("Options", "Hardcore"))
+                        if (!_config.GetBoolean("Options", "Hardcore"))
                             Game.DisplayNotification("Nobody is taking the bait. Find a more populated area.");
-                        state.State = State.PlayerParking;
+                        _state.State = State.PlayerParking;
                     }
 
                     PedBlip = new Blip(TheifDriver) { Color = Color.Red };
@@ -241,7 +248,26 @@ namespace Bait_Car.Handlers
                     {
                         TheifDriver.Tasks.ClearImmediately();
                         TheifDriver.Tasks.EnterVehicle(Car, 10000, -1, EnterVehicleFlags.None).WaitForCompletion();
-                        TheifDriver.Tasks.CruiseWithVehicle(Car, 50, VehicleDrivingFlags.Emergency);
+                        TheifDriver.Tasks.CruiseWithVehicle(Car, 60, VehicleDrivingFlags.Emergency);
+                    }
+
+                    _state.State = State.VehicleStolen;
+                    break;
+                case State.VehicleStolen:
+                    // TODO:
+                    // Doesn't work, LSPDFR dll is in subfolder
+                    // Need to point to it explicitly
+
+                    // Use rage to detect if it's loaded. If it isn't, just have the theifdriver drive aorund
+                    // Maybe start a gta pursuit?
+
+                    // If it is loaded, reference the dll and check if on duty
+                    // If on duty, create lspdfr pursuit
+                    
+                    if (_pursuitHandle == null)
+                    {
+                        _pursuitHandle = Functions.CreatePursuit();
+                        Functions.AddPedToPursuit(_pursuitHandle, TheifDriver);
                     }
                     break;
             }
@@ -252,8 +278,12 @@ namespace Bait_Car.Handlers
         /// </summary>
         public void ToggleEngine()
         {
+            // If the engine health of the car is close to 0, set it to 1000 restoring the engine
+            // If it's closer to 1000, set the health to 0 disabling the engine
             if (Car.Exists())
-                Car.IsEngineOn = !Car.IsEngineOn;
+            {
+                Car.EngineHealth = Math.Abs(Car.EngineHealth) < 100 ? 1000 : 0;
+            }
         }
 
         /// <summary>
@@ -262,7 +292,8 @@ namespace Bait_Car.Handlers
         /// </summary>
         public void ToggleLocks()
         {
-            Car.SetLockedForPlayer(Game.LocalPlayer, !Car.IsLockedForPlayer(Game.LocalPlayer));
+            // TODO: This is not how to do it
+            // Car.SetLockedForPlayer(Game.LocalPlayer, !Car.IsLockedForPlayer(Game.LocalPlayer));
         }
 
         /// <summary>
