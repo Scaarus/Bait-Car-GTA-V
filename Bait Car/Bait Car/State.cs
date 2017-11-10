@@ -5,6 +5,7 @@
         None,
         DrivingToPlayer,
         PlayerParking,
+        WaitingForTheif,
         VehicleStolen,
         SuspectStopped
     }

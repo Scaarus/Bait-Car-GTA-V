@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Rage;
 
 namespace Bait_Car.Handlers
 {
@@ -11,10 +13,12 @@ namespace Bait_Car.Handlers
     /// </summary>
     public class ConfigHandler
     {
-        private const string FilePath = @"Plugins\LSPDFR\BaitCar.ini";
+        private const string FilePath = @"Plugins\BaitCar.ini";
 
         private const string DefaultFile =
             @"// Set any keybind to 'None' to disable that key
+// Set a modifier key by using +
+// Eg. Shift+Y
 
 [Keys]
 
@@ -31,6 +35,10 @@ KillSwitch=K
 // Pressing a second time unlocks the doors.
 // Default: L
 LockDoors=L
+
+// Warp the bait car closer
+// Default: Shift+Y
+WarpCar=Shift+Y
 
 [Controller]
 
@@ -49,6 +57,10 @@ KillSwitch=None
 // Pressing a second time unlocks the doors.
 // Default: None
 LockDoors=None
+
+// Warp the bait car closer
+// Default: None
+WarpCar=None
 
 [Options]
 
@@ -85,7 +97,7 @@ Debug=False";
             if (!DoesConfigExist())
             {
                 LogHandler.Log("Config file does not exist.", LogType.Debug);
-                CreateDefaultFile();
+                CreateDefaultConfig();
             }
 
             LogHandler.Log("Found config file. Loading options.", LogType.Debug);
@@ -111,7 +123,7 @@ Debug=False";
         /// Will Overwrite any existing file with that name.
         /// </summary>
         /// <returns>True if the file was created.</returns>
-        private static void CreateDefaultFile()
+        public static void CreateDefaultConfig()
         {
             try
             {
@@ -240,14 +252,65 @@ Debug=False";
         /// <param name="key">They key to load.</param>
         /// <param name="defaultValue">The value to use if none is found.</param>
         /// <returns>The value for the given key.</returns>
-        public Keys GetKey(string section, string key, Keys defaultValue = Keys.None)
+        public Keys[] GetKey(string section, string key, Keys defaultValue = Keys.None)
+        {
+            if (!TryGetValue(section, key, out var stringValue))
+                return new[] { defaultValue };
+
+            // Check for + to see if there is a modifier
+            if (stringValue.Contains("+") && !stringValue.EndsWith("+"))
+            {
+                    // Split the string and get our modifier and key value
+                Enum.TryParse(stringValue.Split('+').First(), out Keys modifier);
+                Enum.TryParse(stringValue.Split('+').Last(), out Keys keyValue);
+                return new[] { modifier, keyValue };
+            }
+            else
+                // Return our key if one is found or the default key
+                return new[] { Enum.TryParse(stringValue, out Keys keyValue) ? keyValue : defaultValue };
+        }
+
+        /// <summary>
+        /// Loads a key.
+        /// </summary>
+        /// <param name="section">The section the key is part of.</param>
+        /// <param name="key">They key to load.</param>
+        /// <param name="defaultValue">The value to use if none is found.</param>
+        /// <returns>The value for the given key.</returns>
+        public Keys[] GetKey(string section, string key, Keys[] defaultValue = null)
         {
             if (!TryGetValue(section, key, out var stringValue))
                 return defaultValue;
 
-            return Enum.TryParse(stringValue, out Keys keyValue) ? defaultValue : keyValue;
+            // Check for + to see if there is a modifier
+            if (stringValue.Contains("+") && !stringValue.EndsWith("+"))
+            {
+                // Split the string and get our modifier and key value
+                Enum.TryParse(stringValue.Split('+').First(), out Keys modifier);
+                Enum.TryParse(stringValue.Split('+').Last(), out Keys keyValue);
+                return new[] { modifier, keyValue };
+            }
+            else
+                // Return our key if one is found or the default key
+                return Enum.TryParse(stringValue, out Keys keyValue) ? new[] { keyValue } : defaultValue;
         }
 
+        /// <summary>
+        /// Loads a button.
+        /// </summary>
+        /// <param name="section">The section to load from.</param>
+        /// <param name="key">The key to load.</param>
+        /// <param name="defaultValue">The value to use if no key is found.</param>
+        /// <returns>The requested key or the default.</returns>
+        public ControllerButtons GetButton(string section, string key,
+            ControllerButtons defaultValue = ControllerButtons.None)
+        {
+            if (!TryGetValue(section, key, out var stringValue))
+                return defaultValue;
+
+            return Enum.TryParse(stringValue, out ControllerButtons buttonValue) ? buttonValue : defaultValue;
+        }
+        
         /// <summary>
         /// Sets a specific key to the given value.
         /// </summary>
@@ -282,6 +345,9 @@ Debug=False";
                 using (var sw = new StreamWriter(FilePath))
                     foreach (var line in lines)
                         sw.WriteLine(line);
+
+                // Now that our file is updated, update the options
+                Options[$"{section}.{key}"] = value;
 
                 return true;
             }

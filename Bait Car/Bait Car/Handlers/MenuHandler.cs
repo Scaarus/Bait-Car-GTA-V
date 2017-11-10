@@ -57,14 +57,15 @@ namespace Bait_Car.Handlers
             _stateHandler = stateHandler;
 
             #region MainMenu
-            _mainMenu = new UIMenu($"Bait Car {EntryPoint.Version}", "Request a Car");
+            _mainMenu = new UIMenu(EntryPoint.Name, "Request a Car");
             _mainMenu.AddItem(_requestCarVehicleSelector = new UIMenuListItem("Select Car", "Select the car to spawn",
-                new List<string>{"Zentorno", "Carbonizzare", "Banshee", "Coquette", "Comet", "Elegy"}));
+                new List<string> { "Random", "Carbonizzare", "Comet", "Baller", "Dominator" }));
+            // TODO: Add ability to type car name
             _mainMenu.AddItem(_requestCarCurrentVehicle = new UIMenuItem("Select Car You Are In", "Use the vehicle you are currently in as a bait car."));
             #endregion
 
             #region CarMenu
-            _carMenu = new UIMenu($"Bait Car {EntryPoint.Version}", "Car Controls");
+            _carMenu = new UIMenu(EntryPoint.Name, "Car Controls");
             _carMenu.AddItem(_toggleEngine = new UIMenuItem("Toggle Engine"));
             _carMenu.AddItem(_toggleLocks = new UIMenuItem("Toggle Locks"));
             _carMenu.AddItem(_cancelCar = new UIMenuItem("End Bait Car Session"));
@@ -261,24 +262,23 @@ namespace Bait_Car.Handlers
 
         public void Update()
         {
-            if (Game.IsKeyDown(_configHandler.GetKey("Keys", "OpenMenu", Keys.F7)) && !_menuPool.IsAnyMenuOpen())
+            var keys = _configHandler.GetKey("Keys", "OpenMenu", Keys.F7);
+            var button = _configHandler.GetButton("Buttons", "OpenMenu");
+
+            // Horrific, should be fixed some day but probably wont
+            if (keys.Length > 1 && Game.IsKeyDown(keys[0]) &&
+                Game.IsKeyDown(keys[1]) ||
+                keys.Length == 1 && Game.IsKeyDown(keys[0]) ||
+                Game.IsControllerButtonDown(button))
             {
-                LogHandler.Log("Key pressed");
-                switch (_stateHandler.State)
-                {
-                    case State.None:
-                        _mainMenu.Visible = !_mainMenu.Visible;
-                        break;
-                    default:
-                        _carMenu.Visible = !_carMenu.Visible;
-                        break;
-                }
+                if (_stateHandler.State == State.None)
+                    _mainMenu.Visible = !_mainMenu.Visible;
+                else
+                    _carMenu.Visible = !_carMenu.Visible;
             }
 
             if (_mainMenu.Visible)
-            {
                 _requestCarCurrentVehicle.Enabled = Game.LocalPlayer.Character.IsInAnyVehicle(true);
-            }
 
             _menuPool.ProcessMenus();
         }
