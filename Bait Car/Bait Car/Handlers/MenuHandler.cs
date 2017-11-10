@@ -264,27 +264,17 @@ namespace Bait_Car.Handlers
         {
             var keys = _configHandler.GetKey("Keys", "OpenMenu", Keys.F7);
             var button = _configHandler.GetButton("Buttons", "OpenMenu");
-            if (keys.Length == 1)
+
+            // Horrific, should be fixed some day but probably wont
+            if (keys.Length > 1 && Game.IsKeyDown(keys[0]) &&
+                Game.IsKeyDown(keys[1]) ||
+                keys.Length == 1 && Game.IsKeyDown(keys[0]) ||
+                Game.IsControllerButtonDown(button))
             {
-                if ((Game.IsKeyDown(keys[0]) || Game.IsControllerButtonDown(button)) && !_menuPool.IsAnyMenuOpen())
-                {
-                    if (_stateHandler.State == State.None)
-                        _mainMenu.Visible = !_mainMenu.Visible;
-                    else
-                        _carMenu.Visible = !_carMenu.Visible;
-                }
-            }
-            else
-            {
-                // Horrific
-                // TODO: Fix
-                if (!_menuPool.IsAnyMenuOpen() && Game.IsKeyDown(keys[0]) && Game.IsKeyDown(keys[1]) || Game.IsControllerButtonDown(button))
-                {
-                    if (_stateHandler.State == State.None)
-                        _mainMenu.Visible = !_mainMenu.Visible;
-                    else
-                        _carMenu.Visible = !_carMenu.Visible;
-                }
+                if (_stateHandler.State == State.None)
+                    _mainMenu.Visible = !_mainMenu.Visible;
+                else
+                    _carMenu.Visible = !_carMenu.Visible;
             }
 
             if (_mainMenu.Visible)

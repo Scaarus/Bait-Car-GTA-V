@@ -139,7 +139,14 @@ namespace Bait_Car.Handlers
             switch (_state.State)
             {
                 case State.DrivingToPlayer:
-                    if (Game.IsShiftKeyDownRightNow && Game.IsKeyDown(Keys.Y))
+                    var keys = _config.GetKey("Keys", "WarpCar", new[] { Keys.Shift, Keys.Y });
+                    var button = _config.GetButton("Buttons", "WarpCar");
+
+                    // Check if keys/buttons are down
+                    if (keys.Length > 1 && Game.IsKeyDown(keys[0]) &&
+                        Game.IsKeyDown(keys[1]) ||
+                        keys.Length == 1 && Game.IsKeyDown(keys[0]) ||
+                        Game.IsControllerButtonDown(button))
                     {
                         // Teleport the driver closer and allow them to do U-turns
                         PoliceDriver.Tasks.ClearImmediately();
@@ -152,8 +159,16 @@ namespace Bait_Car.Handlers
                     // Display the warp notification
                     if (_timer.Elapsed.TotalSeconds > 30)
                     {
-                        Game.DisplayNotification(
-                            "Your bait car is stuck in traffic. Press 'Shift' + 'Y' to warp it closer.");
+                        if (keys.Length > 1)
+                            Game.DisplayNotification(
+                                "Your bait car is stuck in traffic. Press " +
+                                $"'{keys[0]}' + '{keys[1]}'" +
+                                " to warp it closer.");
+                        else
+                            Game.DisplayNotification(
+                                "Your bait car is stuck in traffic. Press " +
+                                $"'{keys[0]}'" +
+                                " to warp it closer.");
                         _timer.Stop();
                     }
 

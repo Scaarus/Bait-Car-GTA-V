@@ -17,6 +17,8 @@ namespace Bait_Car.Handlers
 
         private const string DefaultFile =
             @"// Set any keybind to 'None' to disable that key
+// Set a modifier key by using +
+// Eg. Shift+Y
 
 [Keys]
 
@@ -33,6 +35,10 @@ KillSwitch=K
 // Pressing a second time unlocks the doors.
 // Default: L
 LockDoors=L
+
+// Warp the bait car closer
+// Default: Shift+Y
+WarpCar=Shift+Y
 
 [Controller]
 
@@ -51,6 +57,10 @@ KillSwitch=None
 // Pressing a second time unlocks the doors.
 // Default: None
 LockDoors=None
+
+// Warp the bait car closer
+// Default: None
+WarpCar=None
 
 [Options]
 
@@ -250,7 +260,7 @@ Debug=False";
             // Check for + to see if there is a modifier
             if (stringValue.Contains("+") && !stringValue.EndsWith("+"))
             {
-                // Split the string and get our modifier and key value
+                    // Split the string and get our modifier and key value
                 Enum.TryParse(stringValue.Split('+').First(), out Keys modifier);
                 Enum.TryParse(stringValue.Split('+').Last(), out Keys keyValue);
                 return new[] { modifier, keyValue };
@@ -258,6 +268,31 @@ Debug=False";
             else
                 // Return our key if one is found or the default key
                 return new[] { Enum.TryParse(stringValue, out Keys keyValue) ? keyValue : defaultValue };
+        }
+
+        /// <summary>
+        /// Loads a key.
+        /// </summary>
+        /// <param name="section">The section the key is part of.</param>
+        /// <param name="key">They key to load.</param>
+        /// <param name="defaultValue">The value to use if none is found.</param>
+        /// <returns>The value for the given key.</returns>
+        public Keys[] GetKey(string section, string key, Keys[] defaultValue = null)
+        {
+            if (!TryGetValue(section, key, out var stringValue))
+                return defaultValue;
+
+            // Check for + to see if there is a modifier
+            if (stringValue.Contains("+") && !stringValue.EndsWith("+"))
+            {
+                // Split the string and get our modifier and key value
+                Enum.TryParse(stringValue.Split('+').First(), out Keys modifier);
+                Enum.TryParse(stringValue.Split('+').Last(), out Keys keyValue);
+                return new[] { modifier, keyValue };
+            }
+            else
+                // Return our key if one is found or the default key
+                return Enum.TryParse(stringValue, out Keys keyValue) ? new[] { keyValue } : defaultValue;
         }
 
         /// <summary>
