@@ -107,11 +107,9 @@ namespace Bait_Car.Handlers
 
             _optionsKeysMenu.AddItem(_optionKeyOpenMenu = new UIMenuItem("Open Main Menu", "The keybind to open this menu."));
             _optionsKeysMenu.AddItem(_optionKeyKillSwitch = new UIMenuItem("Kill Switch", "The keybind to shut off the bait car engine."));
-            _optionsKeysMenu.AddItem(_optionKeyLockDoors = new UIMenuItem("Lock Doors", "The keybind to lock the bait car doors."));
 
             _optionsButtonsMenu.AddItem(_optionButtonOpenMenu = new UIMenuItem("Open Main Menu", "The button to open this menu."));
             _optionsButtonsMenu.AddItem(_optionButtonKillSwitch = new UIMenuItem("Kill Switch", "The button to shut off the bait car engine."));
-            _optionsButtonsMenu.AddItem(_optionButtonLockDoors = new UIMenuItem("Lock Doors", "The button to lock the bait car doors."));
 
             SetOptionsValues();
             #endregion
@@ -142,7 +140,6 @@ namespace Bait_Car.Handlers
             _optionKeyLockDoors.SetRightLabel(_configHandler.GetValue("Keys", "LockDoors", "L"));
             _optionButtonOpenMenu.SetRightLabel(_configHandler.GetValue("Buttons", "OpenMenu", "None"));
             _optionButtonKillSwitch.SetRightLabel(_configHandler.GetValue("Buttons", "KillSwitch", "None"));
-            _optionButtonLockDoors.SetRightLabel(_configHandler.GetValue("Buttons", "LockDoors", "None"));
         }
 
         public void OnItemSelect(UIMenu sender, UIMenuItem selectedItem, int index)
@@ -259,10 +256,8 @@ namespace Bait_Car.Handlers
             var keys = _configHandler.GetKey("Keys", "OpenMenu", Keys.F7);
             var button = _configHandler.GetButton("Buttons", "OpenMenu");
 
-            // Horrific, should be fixed some day but probably wont
-            if (keys.Length > 1 && Game.IsKeyDown(keys[0]) &&
-                Game.IsKeyDown(keys[1]) ||
-                keys.Length == 1 && Game.IsKeyDown(keys[0]) ||
+            // Check if our keys are pressed to open the menu
+            if (Game.IsKeyDown(keys.First()) && Game.IsKeyDown(keys.Last()) ||
                 Game.IsControllerButtonDown(button))
             {
                 if (_stateHandler.State == State.None)

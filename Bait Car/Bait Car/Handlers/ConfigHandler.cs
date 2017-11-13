@@ -31,11 +31,6 @@ OpenMenu=F7
 // Default: K
 KillSwitch=K
 
-// Lock the bait car's doors.
-// Pressing a second time unlocks the doors.
-// Default: L
-LockDoors=L
-
 // Warp the bait car closer
 // Default: Shift+Y
 WarpCar=Shift+Y
@@ -52,11 +47,6 @@ OpenMenu=None
 // Pressing a second time turns the engine back on.
 // Default: None
 KillSwitch=None
-
-// Lock the bait car's doors.
-// Pressing a second time unlocks the doors.
-// Default: None
-LockDoors=None
 
 // Warp the bait car closer
 // Default: None
