@@ -48,9 +48,6 @@ namespace Bait_Car
                 case MenuHandlerEventArgs.EventType.ToggleEngine:
                     _scenario.ToggleEngine();
                     break;
-                case MenuHandlerEventArgs.EventType.ToggleLocks:
-                    _scenario.ToggleLocks();
-                    break;
                 case MenuHandlerEventArgs.EventType.EndSession:
                     _scenario.CleanupSafe();
                     State.State = Bait_Car.State.None;

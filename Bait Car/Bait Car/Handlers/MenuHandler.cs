@@ -30,7 +30,6 @@ namespace Bait_Car.Handlers
 
         private readonly UIMenuItem _cancelCar;
         private readonly UIMenuItem _toggleEngine;
-        private readonly UIMenuItem _toggleLocks;
 
         private readonly UIMenuItem _optionKeyOpenMenu;
         private readonly UIMenuItem _optionKeyKillSwitch;
@@ -67,7 +66,6 @@ namespace Bait_Car.Handlers
             #region CarMenu
             _carMenu = new UIMenu(EntryPoint.Name, "Car Controls");
             _carMenu.AddItem(_toggleEngine = new UIMenuItem("Toggle Engine"));
-            _carMenu.AddItem(_toggleLocks = new UIMenuItem("Toggle Locks"));
             _carMenu.AddItem(_cancelCar = new UIMenuItem("End Bait Car Session"));
             #endregion
 
@@ -176,10 +174,6 @@ namespace Bait_Car.Handlers
                 else if (selectedItem == _toggleEngine)
                 {
                     OnMenuItemSelected?.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.ToggleEngine));
-                }
-                else if (selectedItem == _toggleLocks)
-                {
-                    OnMenuItemSelected?.Invoke(new MenuHandlerEventArgs(MenuHandlerEventArgs.EventType.ToggleLocks));
                 }
             }
             else if (sender == _optionsMenu)
