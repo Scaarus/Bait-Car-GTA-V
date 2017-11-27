@@ -13,7 +13,7 @@ namespace Bait_Car.Handlers
     {
         private readonly ConfigHandler _configHandler;
         private readonly StateHandler _stateHandler;
-        
+
         private readonly MenuPool _menuPool;
         public event OnMenuItemSelectedEvent OnMenuItemSelected;
         public delegate void OnMenuItemSelectedEvent(MenuHandlerEventArgs e);
@@ -33,11 +33,9 @@ namespace Bait_Car.Handlers
 
         private readonly UIMenuItem _optionKeyOpenMenu;
         private readonly UIMenuItem _optionKeyKillSwitch;
-        private readonly UIMenuItem _optionKeyLockDoors;
 
         private readonly UIMenuItem _optionButtonOpenMenu;
         private readonly UIMenuItem _optionButtonKillSwitch;
-        private readonly UIMenuItem _optionButtonLockDoors;
 
         private readonly UIMenuListItem _optionMinSecondsToWait;
         private readonly UIMenuListItem _optionMaxSecondsToWait;
@@ -59,8 +57,10 @@ namespace Bait_Car.Handlers
             _mainMenu = new UIMenu(EntryPoint.Name, "Request a Car");
             _mainMenu.AddItem(_requestCarVehicleSelector = new UIMenuListItem("Select Car", "Select the car to spawn",
                 new List<string> { "Random", "Carbonizzare", "Comet", "Baller", "Dominator" }));
-            // TODO: Add ability to type car name
             _mainMenu.AddItem(_requestCarCurrentVehicle = new UIMenuItem("Select Car You Are In", "Use the vehicle you are currently in as a bait car."));
+
+            // TODO: Add ability to type car name
+            // _mainMenu.AddItem(new UIMenuTextboxItem("Type Car Name", "Type the name of the vehicle you wish to spawn.", "TestContent"));
             #endregion
 
             #region CarMenu
@@ -83,7 +83,7 @@ namespace Bait_Car.Handlers
                 new UIMenuListItem("Maximum Seconds to Wait",
                     "Maximum number of seconds to wait before someone steals the car.",
                     Enumerable.Range(10, 500).Where(w => w % 10 == 0).Select(s => s.ToString()).ToList()));
-            
+
             _optionsMenu.AddItem(_optionMaxSearchRadius =
                 new UIMenuListItem("Maximum Search Radius",
                     "The radius to find a valid ped for stealing the car.",
@@ -137,7 +137,6 @@ namespace Bait_Car.Handlers
             _optionDebug.Checked = _configHandler.GetBoolean("Options", "Debug");
             _optionKeyOpenMenu.SetRightLabel(_configHandler.GetValue("Keys", "OpenMenu", "F7"));
             _optionKeyKillSwitch.SetRightLabel(_configHandler.GetValue("Keys", "KillSwitch", "K"));
-            _optionKeyLockDoors.SetRightLabel(_configHandler.GetValue("Keys", "LockDoors", "L"));
             _optionButtonOpenMenu.SetRightLabel(_configHandler.GetValue("Buttons", "OpenMenu", "None"));
             _optionButtonKillSwitch.SetRightLabel(_configHandler.GetValue("Buttons", "KillSwitch", "None"));
         }
@@ -178,21 +177,22 @@ namespace Bait_Car.Handlers
                 if (selectedItem == _optionSave)
                 {
                     LogHandler.Log("Saving options...");
-                    if (_configHandler.SetValue("Options", "MinSecondsToWait",
-                            _optionMinSecondsToWait.SelectedValue.ToString()) &&
-                        _configHandler.SetValue("Options", "MaxSecondsToWait",
-                            _optionMaxSecondsToWait.SelectedValue.ToString()) &&
-                        _configHandler.SetValue("Options", "MaxSearchRadius",
-                            _optionMaxSearchRadius.SelectedValue.ToString()) &&
-                        _configHandler.SetValue("Options", "Hardcore", _optionHardcore.Checked.ToString()) &&
-                        _configHandler.SetValue("Options", "Debug", _optionDebug.Checked.ToString()) &&
-                        _configHandler.SetValue("Keys", "OpenMenu", _optionKeyOpenMenu.RightLabel) &&
-                        _configHandler.SetValue("Keys", "KillSwitch", _optionKeyKillSwitch.RightLabel) &&
-                        _configHandler.SetValue("Keys", "LockDoors", _optionKeyLockDoors.RightLabel) &&
-                        _configHandler.SetValue("Buttons", "OpenMenu", _optionKeyOpenMenu.RightLabel) &&
-                        _configHandler.SetValue("Buttons", "KillSwitch", _optionButtonKillSwitch.RightLabel) &&
-                        _configHandler.SetValue("Buttons", "LockDoors", _optionKeyLockDoors.RightLabel))
-                        LogHandler.Log("Saving successful!");
+
+                    if (_configHandler.SetValues(new Dictionary<string, string>
+                    {
+                        { "Options.MinSecondsToWait", _optionMinSecondsToWait.SelectedValue.ToString() },
+                        { "Options.MaxSecondsToWait", _optionMaxSecondsToWait.SelectedValue.ToString() },
+                        { "Options.MaxSearchRadius", _optionMaxSearchRadius.SelectedValue.ToString() },
+                        { "Options.Hardcore", _optionHardcore.Checked.ToString() },
+                        { "Options.Debug", _optionDebug.Checked.ToString() },
+                        //{ "Keys.OpenMenu", _optionKeyOpenMenu.RightLabel },
+                        //{ "Keys.KillSwitch", _optionKeyKillSwitch.RightLabel },
+                        //{ "Buttons.OpenMenu", _optionKeyOpenMenu.RightLabel },
+                        //{ "Buttons.KillSwitch", _optionButtonKillSwitch.RightLabel }
+                    }))
+                    {
+                        LogHandler.Log("Options saved!");
+                    }
                 }
                 else if (selectedItem == _optionRevert)
                 {
@@ -210,10 +210,6 @@ namespace Bait_Car.Handlers
                 {
                     // TODO: Set up rebinds
                 }
-                else if (selectedItem == _optionKeyLockDoors)
-                {
-                    // TODO: Set up rebinds
-                }
             }
             else if (sender == _optionsButtonsMenu)
             {
@@ -222,10 +218,6 @@ namespace Bait_Car.Handlers
                     // TODO: Set up rebinds
                 }
                 else if (selectedItem == _optionButtonKillSwitch)
-                {
-                    // TODO: Set up rebinds
-                }
-                else if (selectedItem == _optionButtonLockDoors)
                 {
                     // TODO: Set up rebinds
                 }
@@ -280,7 +272,6 @@ namespace Bait_Car.Handlers
             SpawnVehicle,
             UseCurrentVehicle,
             ToggleEngine,
-            ToggleLocks,
             EndSession
         }
 

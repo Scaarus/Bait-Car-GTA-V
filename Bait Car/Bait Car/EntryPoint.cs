@@ -64,12 +64,6 @@ namespace Bait_Car
             {
                 _menu?.Update();
                 _scenario?.Update();
-
-                if (State?.State == Bait_Car.State.SuspectStopped)
-                {
-                    State.State = Bait_Car.State.None;
-                    break;
-                }
                 GameFiber.Yield();
             }
         }

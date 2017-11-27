@@ -300,15 +300,13 @@ Debug=False";
 
             return Enum.TryParse(stringValue, out ControllerButtons buttonValue) ? buttonValue : defaultValue;
         }
-        
+
         /// <summary>
-        /// Sets a specific key to the given value.
+        /// Given a set of keys and values, save all changes to the ini file.
         /// </summary>
-        /// <param name="section">The section the key is part of.</param>
-        /// <param name="key">The key to replace.</param>
-        /// <param name="value">The value to set.</param>
-        /// <returns>True if the value was set successfully.</returns>
-        public bool SetValue(string section, string key, string value)
+        /// <param name="values">{"Section.Option", Value}</param>
+        /// <returns>If the save was successful.</returns>
+        public bool SetValues(Dictionary<string, string> values)
         {
             try
             {
@@ -323,21 +321,23 @@ Debug=False";
                     }
                 }
 
-                var sectionIndex = lines.FindIndex(f => f == $"[{section}]");
-                LogHandler.Log("Section: " + lines[sectionIndex], LogType.Debug);
-                var keyIndex = lines.FindIndex(sectionIndex, f => f.StartsWith(key));
-                LogHandler.Log("Key: " + lines[keyIndex], LogType.Debug);
+                // Update the lines to use the new values
+                foreach (var i in values)
+                {
+                    var section = i.Key.Split('.').First();
+                    var key = i.Key.Split('.').Last();
 
-                var valueIndex = lines.ElementAt(keyIndex).IndexOf("=", StringComparison.Ordinal) + 1;
-                LogHandler.Log("Value: " + lines[keyIndex].Remove(0, valueIndex), LogType.Debug);
-                lines[keyIndex] = lines.ElementAt(keyIndex).Remove(valueIndex) + value;
+                    var sectionIndex = lines.FindIndex(f => f == $"[{section}]");
+                    var keyIndex = lines.FindIndex(sectionIndex, f => f.StartsWith(key));
+                    var valueIndex = lines.ElementAt(keyIndex).IndexOf("=", StringComparison.Ordinal) + 1;
+                    lines[keyIndex] = lines.ElementAt(keyIndex).Remove(valueIndex) + i.Value;
+                    Options[$"{section}.{key}"] = i.Value;
+                }
 
+                // Write the new values to the file
                 using (var sw = new StreamWriter(FilePath))
                     foreach (var line in lines)
                         sw.WriteLine(line);
-
-                // Now that our file is updated, update the options
-                Options[$"{section}.{key}"] = value;
 
                 return true;
             }
@@ -346,6 +346,7 @@ Debug=False";
                 LogHandler.Log("Unable to load the config file.", LogType.Error);
                 LogHandler.Log(e.Message, LogType.Debug);
             }
+
             return false;
         }
     }
