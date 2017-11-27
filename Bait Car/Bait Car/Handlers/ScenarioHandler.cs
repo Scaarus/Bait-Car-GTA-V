@@ -380,7 +380,7 @@ namespace Bait_Car.Handlers
                     if (Car && PoliceDriver &&
                         Car.DistanceTo(Game.LocalPlayer.Character.Position) <= 10f)
                     {
-                        PoliceDriver.Tasks.ClearImmediately();
+                        PoliceDriver.Tasks.Clear();
                         PoliceDriver.Tasks.LeaveVehicle(Car, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
                         PoliceDriver.Tasks.GoToOffsetFromEntity(Game.LocalPlayer.Character, 5f, 0, 1.8f)
                             .WaitForCompletion(5000);
@@ -432,7 +432,7 @@ namespace Bait_Car.Handlers
                         if (new Random().Next(0, 2) == 2)
                             TheifDriver.Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_PISTOL50"), 1000, true);
                         // Clear the driver's tasks
-                        TheifDriver.Tasks.ClearImmediately();
+                        TheifDriver.Tasks.Clear();
                         // Make them face the car (so we can have a proper heading for the next commmand
                         TheifDriver.Face(Car.Position);
                         // Stand away from the vehicle
@@ -453,7 +453,7 @@ namespace Bait_Car.Handlers
                         if (TheifDriver.DistanceTo(Game.LocalPlayer.Character.Position) < 25f)
                         {
                             // Reset our ped
-                            TheifDriver.Tasks.ClearImmediately();
+                            TheifDriver.Tasks.Clear();
                             TheifDriver.Tasks.Wander();
                             TheifDriver = null;
 
@@ -464,10 +464,6 @@ namespace Bait_Car.Handlers
 
                     // The theif is near the car and done a check for the player.
                     // Get in the vehicle and drive off
-                    // TODO: Pick where the driver goes
-                    // Chop shop?
-                    // Their home?
-                    // Just a joy ride?
                     if (TheifDriver)
                     {
                         TheifDriver.Tasks.ClearImmediately();
@@ -500,26 +496,13 @@ namespace Bait_Car.Handlers
         /// </summary>
         public void ToggleEngine()
         {
-            if (Car)
-            {
-                Car.IsEngineOn = false;
-                //if (Math.Abs(_topSpeed) < 0.1f)
-                //{
-                //    _topSpeed = Car.TopSpeed;
-                //    Car.TopSpeed = 0;
-                //}
-                //else
-                //{
-                //    Car.TopSpeed = _topSpeed;
-                //    _topSpeed = 0;
-                //}
-
-            }
             if (TheifDriver)
             {
                 TheifDriver.Tasks.Clear();
                 TheifDriver.Tasks.PerformDrivingManeuver(VehicleManeuver.Wait);
             }
+            if (Car)
+                Car.IsEngineOn = false;
         }
 
         /// <summary>
