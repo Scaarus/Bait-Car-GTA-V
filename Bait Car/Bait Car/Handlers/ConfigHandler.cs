@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Rage;
 
 namespace Bait_Car.Handlers
@@ -13,7 +12,7 @@ namespace Bait_Car.Handlers
     /// </summary>
     public class ConfigHandler
     {
-        private const string FilePath = @"Plugins\BaitCar.ini";
+        private const string FilePath = @"Plugins\Bait Car.ini";
 
         private const string DefaultFile =
             @"// Set any keybind to 'None' to disable that key
@@ -77,7 +76,7 @@ Hardcore=False
 // Default: False
 Debug=False";
 
-        private readonly Dictionary<string, string> Options = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _options = new Dictionary<string, string>();
 
         public ConfigHandler()
         {
@@ -137,7 +136,7 @@ Debug=False";
         /// <returns>True if the options loaded.</returns>
         private bool LoadOptions()
         {
-            Options.Clear();
+            _options.Clear();
             try
             {
                 using (var sr = new StreamReader(FilePath))
@@ -167,7 +166,7 @@ Debug=False";
                             var key = line.Substring(0, index).Trim();
                             var value = line.Substring(index + 1).Trim();
 
-                            Options.Add($"{section}.{key}".ToLower(), value);
+                            _options.Add($"{section}.{key}".ToLower(), value);
                         }
                     }
                 }
@@ -190,7 +189,7 @@ Debug=False";
         /// <returns>True if the key was found.</returns>
         private bool TryGetValue(string section, string key, out string value)
         {
-            return Options.TryGetValue($"{section}.{key}".ToLower(), out value);
+            return _options.TryGetValue($"{section}.{key}".ToLower(), out value);
         }
         
         /// <summary>
@@ -331,7 +330,7 @@ Debug=False";
                     var keyIndex = lines.FindIndex(sectionIndex, f => f.StartsWith(key));
                     var valueIndex = lines.ElementAt(keyIndex).IndexOf("=", StringComparison.Ordinal) + 1;
                     lines[keyIndex] = lines.ElementAt(keyIndex).Remove(valueIndex) + i.Value;
-                    Options[$"{section}.{key}"] = i.Value;
+                    _options[$"{section}.{key}"] = i.Value;
                 }
 
                 // Write the new values to the file
