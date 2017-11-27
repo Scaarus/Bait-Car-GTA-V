@@ -19,6 +19,7 @@ namespace Bait_Car.Handlers
         private readonly StateHandler _state;
         private readonly Stopwatch _timer;
         private int _timeToWait;
+        private float _topSpeed;
 
         public readonly List<string> Vehicles = new List<string>
         {
@@ -499,10 +500,26 @@ namespace Bait_Car.Handlers
         /// </summary>
         public void ToggleEngine()
         {
-            if (TheifDriver)
-                TheifDriver.Tasks.ClearImmediately();
             if (Car)
+            {
                 Car.IsEngineOn = false;
+                //if (Math.Abs(_topSpeed) < 0.1f)
+                //{
+                //    _topSpeed = Car.TopSpeed;
+                //    Car.TopSpeed = 0;
+                //}
+                //else
+                //{
+                //    Car.TopSpeed = _topSpeed;
+                //    _topSpeed = 0;
+                //}
+
+            }
+            if (TheifDriver)
+            {
+                TheifDriver.Tasks.Clear();
+                TheifDriver.Tasks.PerformDrivingManeuver(VehicleManeuver.Wait);
+            }
         }
 
         /// <summary>
