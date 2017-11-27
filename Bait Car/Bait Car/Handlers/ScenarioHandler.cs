@@ -14,7 +14,6 @@ namespace Bait_Car.Handlers
         public Ped PoliceDriver { get; private set; }
         public Ped TheifDriver { get; private set; }
         public Blip CarBlip { get; private set; }
-        public Blip PedBlip { get; private set; }
 
         private readonly ConfigHandler _config;
         private readonly StateHandler _state;
@@ -175,6 +174,8 @@ namespace Bait_Car.Handlers
                     {
                         IsPersistent = true
                     };
+                    // Add our blip so the player knows where the vehicle is
+                    CarBlip = new Blip(Car) { Color = Color.Yellow };
                     SpawnDriver();
                     break;
                 case "CARBONIZZARE":
@@ -183,6 +184,8 @@ namespace Bait_Car.Handlers
                     {
                         IsPersistent = true
                     };
+                    // Add our blip so the player knows where the vehicle is
+                    CarBlip = new Blip(Car) { Color = Color.Yellow };
                     SpawnDriver();
                     break;
                 case "COMET":
@@ -191,6 +194,8 @@ namespace Bait_Car.Handlers
                     {
                         IsPersistent = true
                     };
+                    // Add our blip so the player knows where the vehicle is
+                    CarBlip = new Blip(Car) { Color = Color.Yellow };
                     SpawnDriver();
                     break;
                 case "BALLER":
@@ -199,6 +204,8 @@ namespace Bait_Car.Handlers
                     {
                         IsPersistent = true
                     };
+                    // Add our blip so the player knows where the vehicle is
+                    CarBlip = new Blip(Car) { Color = Color.Yellow };
                     SpawnDriver();
                     break;
                 case "DOMINATOR":
@@ -207,11 +214,15 @@ namespace Bait_Car.Handlers
                     {
                         IsPersistent = true
                     };
+                    // Add our blip so the player knows where the vehicle is
+                    CarBlip = new Blip(Car) { Color = Color.Yellow };
                     SpawnDriver();
                     break;
                 case "CURRENT":
                     Car = Game.LocalPlayer.Character.CurrentVehicle;
                     Car.IsPersistent = true;
+                    // Add our blip so the player knows where the vehicle is
+                    CarBlip = new Blip(Car) { Color = Color.Yellow };
                     _state.State = State.PlayerParking;
                     break;
             }
@@ -228,9 +239,6 @@ namespace Bait_Car.Handlers
                 IsPersistent = true,
                 BlockPermanentEvents = true
             };
-            // Add our blip so the player knows where the vehicle is
-            CarBlip = new Blip(Car) {Color = Color.Yellow};
-            PedBlip = new Blip(PoliceDriver) {Color = Color.Blue};
 
             BringVehicleToPlayer();
         }
@@ -238,7 +246,7 @@ namespace Bait_Car.Handlers
         private void BringVehicleToPlayer()
         {
             //  Put the driver in the vehicle
-            if (PoliceDriver != null && Car != null && PoliceDriver.Exists() && Car.Exists())
+            if (PoliceDriver && Car)
             {
                 PoliceDriver.Tasks.EnterVehicle(Car, 10000, -1, EnterVehicleFlags.WarpIn).WaitForCompletion(1000);
 
@@ -256,10 +264,9 @@ namespace Bait_Car.Handlers
 
         private void DisposePoliceDriver()
         {
-            if (PoliceDriver == null || !PoliceDriver.Exists()) return;
+            if (!PoliceDriver) return;
             PoliceDriver.Tasks.Wander();
             PoliceDriver.IsPersistent = false;
-            PedBlip.Delete();
         }
 
         /// <summary>
@@ -369,7 +376,7 @@ namespace Bait_Car.Handlers
                     }
 
                     // Exit the car and approch the player
-                    if (Car.Exists() && PoliceDriver.Exists() &&
+                    if (Car && PoliceDriver &&
                         Car.DistanceTo(Game.LocalPlayer.Character.Position) <= 10f)
                     {
                         PoliceDriver.Tasks.ClearImmediately();
@@ -409,7 +416,7 @@ namespace Bait_Car.Handlers
                             f.TravelDistanceTo(Car.Position) < 50f);
 
                     // If we don't find a suitable ped, tell the user to find a new location
-                    if (TheifDriver == null)
+                    if (!TheifDriver)
                     {
                         LogHandler.Log("Unable to find thief driver", LogType.Debug);
                         if (!_config.GetBoolean("Options", "Hardcore"))
@@ -417,9 +424,7 @@ namespace Bait_Car.Handlers
                         _state.State = State.PlayerParking;
                     }
 
-                    PedBlip = new Blip(TheifDriver) { Color = Color.Red };
-
-                    if (TheifDriver != null && TheifDriver.Exists())
+                    if (TheifDriver)
                     {
                         // 1 in 8 chance of theif having gun
                         // TODO: Make the chance much lower (1 in 8) in final version
@@ -434,7 +439,7 @@ namespace Bait_Car.Handlers
                     }
 
                     // Approach vehicle & look around
-                    if (TheifDriver != null && TheifDriver.Exists())
+                    if (TheifDriver)
                     {
                         if (TheifDriver.IsFemale)
                             TheifDriver.Tasks.PlayAnimation("amb@code_human_wander_idles@female@idle_a",
@@ -462,7 +467,7 @@ namespace Bait_Car.Handlers
                     // Chop shop?
                     // Their home?
                     // Just a joy ride?
-                    if (TheifDriver != null && TheifDriver.Exists())
+                    if (TheifDriver)
                     {
                         TheifDriver.Tasks.ClearImmediately();
                         TheifDriver.Tasks.EnterVehicle(Car, 10000, -1, EnterVehicleFlags.AllowJacking).WaitForCompletion();
@@ -494,9 +499,9 @@ namespace Bait_Car.Handlers
         /// </summary>
         public void ToggleEngine()
         {
-            if (TheifDriver.Exists())
+            if (TheifDriver)
                 TheifDriver.Tasks.ClearImmediately();
-            if (Car.Exists())
+            if (Car)
                 Car.IsEngineOn = false;
         }
 
@@ -505,7 +510,7 @@ namespace Bait_Car.Handlers
         /// </summary>
         public void CleanupSafe()
         {
-            if (PoliceDriver.Exists())
+            if (PoliceDriver)
             {
                 // Have the driver drive off or walk off
                 if (PoliceDriver.CurrentVehicle == Car)
@@ -518,7 +523,7 @@ namespace Bait_Car.Handlers
                 PoliceDriver.IsPersistent = false;
             }
 
-            if (TheifDriver.Exists())
+            if (TheifDriver)
             {
                 // Have the driver drive off or walk off
                 if (TheifDriver.CurrentVehicle == Car)
@@ -534,15 +539,12 @@ namespace Bait_Car.Handlers
             // Allow our car to despawn
             // If it has a driver, they will drive away
             // If it has no driver, it will despawn when the player is away
-            if (Car.Exists())
+            if (Car)
                 Car.IsPersistent = false;
 
             // Remove our blip
-            if (CarBlip.Exists())
+            if (CarBlip)
                 CarBlip.Delete();
-
-            if (PedBlip != null && PedBlip.Exists())
-                PedBlip.Delete();
         }
 
         /// <summary>
@@ -550,16 +552,14 @@ namespace Bait_Car.Handlers
         /// </summary>
         public void Cleanup()
         {
-            if (PoliceDriver != null && PoliceDriver.Exists())
+            if (PoliceDriver)
                 PoliceDriver.Delete();
-            if (TheifDriver != null && TheifDriver.Exists())
+            if (TheifDriver)
                 TheifDriver.Delete();
-            if (Car != null && Car.Exists())
+            if (Car)
                 Car.Delete();
-            if (CarBlip != null && CarBlip.Exists())
+            if (CarBlip)
                 CarBlip.Delete();
-            if (PedBlip != null && PedBlip.Exists())
-                PedBlip.Delete();
         }
     }
 }

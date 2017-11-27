@@ -39,10 +39,9 @@ namespace Bait_Car
             {
                 case MenuHandlerEventArgs.EventType.SpawnVehicle:
                     _scenario = new ScenarioHandler(_config, State, e.VehicleType);
-                    State.State = Bait_Car.State.DrivingToPlayer;
                     break;
                 case MenuHandlerEventArgs.EventType.UseCurrentVehicle:
-                    State.State = Bait_Car.State.PlayerParking;
+                    _scenario = new ScenarioHandler(_config, State, "CURRENT");
                     break;
                 case MenuHandlerEventArgs.EventType.ToggleEngine:
                     _scenario.ToggleEngine();
