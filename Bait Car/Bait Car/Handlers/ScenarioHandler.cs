@@ -528,7 +528,8 @@ namespace Bait_Car.Handlers
 
                     TheifDriver.Tasks.ClearImmediately();
                     DriveToLocation();
-                    Game.DisplayNotification("The bait car has been taken!");
+                    if (!_config.GetBoolean("Options", "Hardcore"))
+                        Game.DisplayNotification("The bait car has been taken!");
 
                     _state.State = State.VehicleStolen;
                     break;
