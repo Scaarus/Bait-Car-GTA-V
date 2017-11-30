@@ -382,11 +382,11 @@ namespace Bait_Car.Handlers
         /// Calculates the heading for the ped to face the given vehicle.
         /// </summary>
         /// <param name="ped">Ped to change heading for.</param>
-        /// <param name="vehicle">Vehicle to look at.</param>
+        /// <param name="entityToLookAt">Entity to look at.</param>
         /// <returns>The heading to look at the vehicle.</returns>
-        public double CalculateHeading(Ped ped, Vehicle vehicle)
+        public double CalculateHeading(Ped ped, Entity entityToLookAt)
         {
-            return Math.Atan2(ped.Position.Y - vehicle.Position.Y, ped.Position.X - vehicle.Position.X);
+            return Math.Atan2(ped.Position.Y - entityToLookAt.Position.Y, ped.Position.X - entityToLookAt.Position.X);
         }
 
         /// <summary>
@@ -448,8 +448,8 @@ namespace Bait_Car.Handlers
                     {
                         PoliceDriver.Tasks.Clear();
                         PoliceDriver.Tasks.LeaveVehicle(Car, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
-                        PoliceDriver.Tasks.GoToOffsetFromEntity(Game.LocalPlayer.Character, 5f, 0, 1.8f)
-                            .WaitForCompletion(5000);
+                        PoliceDriver.Tasks.GoToOffsetFromEntity(Game.LocalPlayer.Character, 5f, (float)CalculateHeading(PoliceDriver, Game.LocalPlayer.Character), 1.8f)
+                            .WaitForCompletion(1000);
                         Game.DisplaySubtitle("Here is the car you requested, Sir.");
                         DisposePoliceDriver();
                         _state.State = State.PlayerParking;
@@ -528,6 +528,7 @@ namespace Bait_Car.Handlers
 
                     TheifDriver.Tasks.ClearImmediately();
                     DriveToLocation();
+                    Game.DisplayNotification("The bait car has been taken!");
 
                     _state.State = State.VehicleStolen;
                     break;
@@ -535,9 +536,10 @@ namespace Bait_Car.Handlers
                     if (AreEngineKeysPressed())
                         ToggleEngine();
 
-                    if (_engineDisabled && TheifDriver.Tasks.CurrentTaskStatus == TaskStatus.None)
+                    if (_engineDisabled && TheifDriver.Tasks.CurrentTaskStatus == TaskStatus.None &&
+                        TheifDriver.IsInAnyVehicle(true))
                     {
-                        TheifDriver.Tasks.PerformDrivingManeuver(Car, VehicleManeuver.Wait);
+                        TheifDriver.Tasks.PerformDrivingManeuver(VehicleManeuver.Wait);
                     }
 
                     // TODO: Monitor for following police vehicles
