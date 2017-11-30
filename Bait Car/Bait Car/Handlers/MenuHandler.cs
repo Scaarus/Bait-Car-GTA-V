@@ -191,7 +191,7 @@ namespace Bait_Car.Handlers
                         //{ "Buttons.KillSwitch", _optionButtonKillSwitch.RightLabel }
                     }))
                     {
-                        // TODO: Display in game notification that options are saved
+                        Game.DisplayNotification("Options saved!");
                         LogHandler.Log("Options saved!");
                     }
                 }

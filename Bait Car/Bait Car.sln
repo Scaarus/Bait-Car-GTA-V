@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+VisualStudioVersion = 15.0.27004.2006
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bait Car", "Bait Car\Bait Car.csproj", "{A5EEE79C-DCA1-46E6-B747-59AE425402F9}"
 EndProject
@@ -27,5 +27,12 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B50E5123-7397-4CFA-B5B6-9D327AC944E9}
+	EndGlobalSection
+	GlobalSection(AutomaticVersions) = postSolution
+		UpdateAssemblyVersion = True
+		UpdateAssemblyFileVersion = True
+		UpdateAssemblyInfoVersion = False
+		AssemblyVersionSettings = None.None.IncrementOnDemandWithReset.Increment
+		AssemblyFileVersionSettings = None.None.IncrementOnDemandWithReset.Increment
 	EndGlobalSection
 EndGlobal

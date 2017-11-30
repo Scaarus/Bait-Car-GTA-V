@@ -19,7 +19,7 @@ namespace Bait_Car.Handlers
         private readonly StateHandler _state;
         private readonly Stopwatch _timer;
         private int _timeToWait;
-        private float _topSpeed;
+        private bool _engineDisabled;
 
         public readonly List<string> Vehicles = new List<string>
         {
@@ -325,6 +325,60 @@ namespace Bait_Car.Handlers
         }
 
         /// <summary>
+        /// Checks if the bound kill engine keys or buttons are pressed
+        /// </summary>
+        /// <returns>True if the buttons are pressed</returns>
+        private bool AreEngineKeysPressed()
+        {
+            var keys = _config.GetKey("Keys", "KillSwitch", new[] { Keys.Shift, Keys.K });
+            var button = _config.GetButton("Controller", "KillSwitch");
+
+            bool keysPressed;
+
+            switch (keys.First())
+            {
+                case Keys.Shift:
+                case Keys.ShiftKey:
+                case Keys.LShiftKey:
+                case Keys.RShiftKey:
+                    keysPressed = Game.IsShiftKeyDownRightNow;
+                    break;
+                case Keys.Control:
+                case Keys.ControlKey:
+                case Keys.LControlKey:
+                case Keys.RControlKey:
+                    keysPressed = Game.IsControlKeyDownRightNow;
+                    break;
+                default:
+                    keysPressed = Game.IsKeyDown(keys.First());
+                    break;
+            }
+
+            switch (keys.Last())
+            {
+                case Keys.Shift:
+                case Keys.ShiftKey:
+                case Keys.LShiftKey:
+                case Keys.RShiftKey:
+                    if (keysPressed)
+                        keysPressed = Game.IsShiftKeyDownRightNow;
+                    break;
+                case Keys.Control:
+                case Keys.ControlKey:
+                case Keys.LControlKey:
+                case Keys.RControlKey:
+                    if (keysPressed)
+                        keysPressed = Game.IsControlKeyDownRightNow;
+                    break;
+                default:
+                    keysPressed = Game.IsKeyDown(keys.Last());
+                    break;
+            }
+
+            return keysPressed || Game.IsControllerButtonDown(button);
+        }
+
+        /// <summary>
         /// Calculates the heading for the ped to face the given vehicle.
         /// </summary>
         /// <param name="ped">Ped to change heading for.</param>
@@ -333,6 +387,18 @@ namespace Bait_Car.Handlers
         public double CalculateHeading(Ped ped, Vehicle vehicle)
         {
             return Math.Atan2(ped.Position.Y - vehicle.Position.Y, ped.Position.X - vehicle.Position.X);
+        }
+
+        /// <summary>
+        /// Make the thief drive to a location or cruise
+        /// </summary>
+        public void DriveToLocation()
+        {
+            if (TheifDriver)
+            {
+                TheifDriver.Tasks.EnterVehicle(Car, 10000, -1, EnterVehicleFlags.AllowJacking).WaitForCompletion();
+                TheifDriver.Tasks.CruiseWithVehicle(Car, 13, VehicleDrivingFlags.Normal);
+            }
         }
 
         /// <summary>
@@ -373,7 +439,7 @@ namespace Bait_Car.Handlers
                                 "Your bait car is stuck in traffic. Press " +
                                 $"~y~'{keys[0]}'~w~" +
                                 " to warp it closer.");
-                        _timer.Stop();
+                        _timer.Reset();
                     }
 
                     // Exit the car and approch the player
@@ -423,18 +489,16 @@ namespace Bait_Car.Handlers
                         if (!_config.GetBoolean("Options", "Hardcore"))
                             Game.DisplayNotification("Nobody is taking the bait. Find a more populated area.");
                         _state.State = State.PlayerParking;
+                        break;
                     }
 
                     if (TheifDriver)
                     {
                         // 1 in 8 chance of theif having gun
-                        // TODO: Make the chance much lower (1 in 8) in final version
-                        if (new Random().Next(0, 2) == 2)
+                        if (new Random().Next(0, 8) == 2)
                             TheifDriver.Inventory.GiveNewWeapon(new WeaponAsset("WEAPON_PISTOL50"), 1000, true);
                         // Clear the driver's tasks
                         TheifDriver.Tasks.Clear();
-                        // Make them face the car (so we can have a proper heading for the next commmand
-                        TheifDriver.Face(Car.Position);
                         // Stand away from the vehicle
                         TheifDriver.Tasks.GoStraightToPosition(Car.Position, 1, (float)CalculateHeading(TheifDriver, Car), 3, 30000).WaitForCompletion();
                     }
@@ -462,29 +526,27 @@ namespace Bait_Car.Handlers
                         }
                     }
 
-                    // The theif is near the car and done a check for the player.
-                    // Get in the vehicle and drive off
-                    if (TheifDriver)
-                    {
-                        TheifDriver.Tasks.ClearImmediately();
-                        TheifDriver.Tasks.EnterVehicle(Car, 10000, -1, EnterVehicleFlags.AllowJacking).WaitForCompletion();
-                        TheifDriver.Tasks.CruiseWithVehicle(Car, 13, VehicleDrivingFlags.Normal);
-                    }
+                    TheifDriver.Tasks.ClearImmediately();
+                    DriveToLocation();
 
                     _state.State = State.VehicleStolen;
                     break;
                 case State.VehicleStolen:
-                    // TODO: Monitor for following police vehicles
+                    if (AreEngineKeysPressed())
+                        ToggleEngine();
 
+                    if (_engineDisabled && TheifDriver.Tasks.CurrentTaskStatus == TaskStatus.None)
+                    {
+                        TheifDriver.Tasks.PerformDrivingManeuver(Car, VehicleManeuver.Wait);
+                    }
+
+                    // TODO: Monitor for following police vehicles
                     if (!TheifDriver.IsInAnyVehicle(true) || TheifDriver.IsDead)
                         _state.State = State.SuspectStopped;
 
                     break;
 
                 case State.SuspectStopped:
-                    //if (TheifDriver == null || !TheifDriver.Exists() || TheifDriver.IsDead)
-                    //    if (PedBlip != null && PedBlip.Exists())
-                    //        PedBlip.Delete();
                     CleanupSafe();
                     _state.State = State.None;
                     break;
@@ -496,13 +558,21 @@ namespace Bait_Car.Handlers
         /// </summary>
         public void ToggleEngine()
         {
+            _engineDisabled = !_engineDisabled;
+
             if (TheifDriver)
             {
-                TheifDriver.Tasks.Clear();
-                TheifDriver.Tasks.PerformDrivingManeuver(VehicleManeuver.Wait);
+                if (!_engineDisabled)
+                    DriveToLocation();
+                else
+                    TheifDriver.Tasks.Clear();
             }
+
             if (Car)
-                Car.IsEngineOn = false;
+            {
+                Car.IsEngineOn = _engineDisabled;
+                Car.FuelLevel = _engineDisabled ? 0 : 100;
+            }
         }
 
         /// <summary>
