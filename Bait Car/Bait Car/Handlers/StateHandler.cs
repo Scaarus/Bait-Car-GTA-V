@@ -5,7 +5,7 @@ namespace Bait_Car.Handlers
     public class StateHandler
     {
         public event StateChangeEvent Event;
-        public delegate void StateChangeEvent(StateHandler s, EventArgs e);
+        public delegate void StateChangeEvent(StateHandler s, State previousState, State newState);
 
         private State _currentState;
 
@@ -14,8 +14,8 @@ namespace Bait_Car.Handlers
             get => _currentState;
             set
             {
+                Event?.Invoke(this, _currentState, value);
                 _currentState = value;
-                Event?.Invoke(this, new EventArgs());
             }
         }
     }

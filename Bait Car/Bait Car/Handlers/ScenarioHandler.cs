@@ -158,6 +158,9 @@ namespace Bait_Car.Handlers
             _timer = new Stopwatch();
             _config = configHandler;
             _state = stateHandler;
+
+            _state.Event += StateChangedHandler;
+
             SpawnVehicle(carToSpawn.ToUpper());
         }
 
@@ -249,10 +252,10 @@ namespace Bait_Car.Handlers
             //  Put the driver in the vehicle
             if (PoliceDriver && Car)
             {
-                PoliceDriver.Tasks.EnterVehicle(Car, 10000, -1, EnterVehicleFlags.WarpIn).WaitForCompletion(1000);
+                PoliceDriver.Tasks.ClearImmediately();
+                PoliceDriver.Tasks.EnterVehicle(Car, 1000, -1, EnterVehicleFlags.WarpIn).WaitForCompletion(1000);
 
                 // Drive to the player
-                PoliceDriver.Tasks.ClearImmediately();
                 PoliceDriver.Tasks.DriveToPosition(Car, Game.LocalPlayer.Character.Position, 16f,
                     VehicleDrivingFlags.Normal, 10f);
 
@@ -418,7 +421,7 @@ namespace Bait_Car.Handlers
                         LogHandler.Log("Warp keys pressed", LogType.Debug);
 
                         // Teleport the driver closer and allow them to do U-turns
-                        PoliceDriver.Tasks.ClearImmediately();
+                        PoliceDriver.Tasks.Clear();
                         Car.Position = World.GetNextPositionOnStreet(Game.LocalPlayer.Character.Position.Around(50f));
                         PoliceDriver.Tasks.EnterVehicle(Car, 1000, -1, EnterVehicleFlags.WarpIn).WaitForCompletion();
                         PoliceDriver.Tasks.DriveToPosition(Car, Game.LocalPlayer.Character.Position, 16f,
@@ -455,9 +458,10 @@ namespace Bait_Car.Handlers
                         _state.State = State.PlayerParking;
                     }
                     break;
+
                 case State.PlayerParking:
                     // The player isn't in a car and their last car was the bait car
-                    // Assume the player move the car
+                    // Assume the player moved the car
                     if (!Game.LocalPlayer.Character.IsInAnyVehicle(true) &&
                         Game.LocalPlayer.Character.LastVehicle == Car)
                     {
@@ -473,8 +477,11 @@ namespace Bait_Car.Handlers
                         _state.State = State.WaitingForTheif;
                     }
                     break;
+
                 case State.WaitingForTheif:
+                    // Wait until our timer passes than random time to wait
                     if (_timer.Elapsed.TotalSeconds < _timeToWait) break;
+
                     // Find a random ped to take the car
                     // Ped cannot be in car
                     TheifDriver = World.EnumeratePeds()
@@ -521,18 +528,20 @@ namespace Bait_Car.Handlers
                             TheifDriver.Tasks.Wander();
                             TheifDriver = null;
 
-                            // Break out and restart the loop so we get a new ped
+                            // Restart our wait timer and break out of the loop so we can find a new ped
+                            _timer.Restart();
                             break;
                         }
                     }
 
-                    TheifDriver.Tasks.ClearImmediately();
+                    TheifDriver.Tasks.Clear();
                     DriveToLocation();
                     if (!_config.GetBoolean("Options", "Hardcore"))
                         Game.DisplayNotification("The bait car has been taken!");
 
                     _state.State = State.VehicleStolen;
                     break;
+
                 case State.VehicleStolen:
                     if (AreEngineKeysPressed())
                         ToggleEngine();
@@ -548,6 +557,15 @@ namespace Bait_Car.Handlers
                         _state.State = State.SuspectStopped;
 
                     break;
+
+
+            }
+        }
+
+        private void StateChangedHandler(StateHandler s, State previousState, State newState)
+        {
+            switch (newState)
+            {
 
                 case State.SuspectStopped:
                     CleanupSafe();
