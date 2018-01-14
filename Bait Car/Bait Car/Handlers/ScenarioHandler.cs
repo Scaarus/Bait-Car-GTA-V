@@ -20,6 +20,8 @@ namespace Bait_Car.Handlers
         private readonly Stopwatch _timer;
         private int _timeToWait;
         private bool _engineDisabled;
+        private Keys[] _keys;
+        private ControllerButtons _button;
 
         public readonly List<string> Vehicles = new List<string>
         {
@@ -161,6 +163,9 @@ namespace Bait_Car.Handlers
 
             _state.Event += StateChangedHandler;
 
+            _keys = _config.GetKey("Keys", "WarpCar", new[] { Keys.Shift, Keys.Y });
+            _button = _config.GetButton("Controller", "WarpCar");
+
             SpawnVehicle(carToSpawn.ToUpper());
         }
 
@@ -180,7 +185,7 @@ namespace Bait_Car.Handlers
                     };
                     // Add our blip so the player knows where the vehicle is
                     CarBlip = new Blip(Car) { Color = Color.Yellow };
-                    SpawnDriver();
+                    DriveToPlayer();
                     break;
                 case "CARBONIZZARE":
                     Car = new Vehicle(new Model(carToSpawn),
@@ -190,7 +195,7 @@ namespace Bait_Car.Handlers
                     };
                     // Add our blip so the player knows where the vehicle is
                     CarBlip = new Blip(Car) { Color = Color.Yellow };
-                    SpawnDriver();
+                    DriveToPlayer();
                     break;
                 case "COMET":
                     Car = new Vehicle(new Model("COMET2"),
@@ -200,7 +205,7 @@ namespace Bait_Car.Handlers
                     };
                     // Add our blip so the player knows where the vehicle is
                     CarBlip = new Blip(Car) { Color = Color.Yellow };
-                    SpawnDriver();
+                    DriveToPlayer();
                     break;
                 case "BALLER":
                     Car = new Vehicle(new Model(carToSpawn),
@@ -210,7 +215,7 @@ namespace Bait_Car.Handlers
                     };
                     // Add our blip so the player knows where the vehicle is
                     CarBlip = new Blip(Car) { Color = Color.Yellow };
-                    SpawnDriver();
+                    DriveToPlayer();
                     break;
                 case "DOMINATOR":
                     Car = new Vehicle(new Model(carToSpawn),
@@ -220,7 +225,7 @@ namespace Bait_Car.Handlers
                     };
                     // Add our blip so the player knows where the vehicle is
                     CarBlip = new Blip(Car) { Color = Color.Yellow };
-                    SpawnDriver();
+                    DriveToPlayer();
                     break;
                 case "CURRENT":
                     Car = Game.LocalPlayer.Character.CurrentVehicle;
@@ -232,10 +237,7 @@ namespace Bait_Car.Handlers
             }
         }
 
-        /// <summary>
-        /// Spawn a driver to bring the car to the player
-        /// </summary>
-        private void SpawnDriver()
+        private void DriveToPlayer()
         {
             // Spawn our driver and set flags so they don't despawn or abandon the vehicle
             PoliceDriver = new Ped(new Model("s_m_m_fiboffice_02"), Car.Position, 0)
@@ -244,14 +246,9 @@ namespace Bait_Car.Handlers
                 BlockPermanentEvents = true
             };
 
-            BringVehicleToPlayer();
-        }
-
-        private void BringVehicleToPlayer()
-        {
-            //  Put the driver in the vehicle
-            if (PoliceDriver && Car)
+            if (Car)
             {
+                // Warp the driver into the car
                 PoliceDriver.Tasks.ClearImmediately();
                 PoliceDriver.Tasks.EnterVehicle(Car, 1000, -1, EnterVehicleFlags.WarpIn).WaitForCompletion(1000);
 
@@ -262,15 +259,18 @@ namespace Bait_Car.Handlers
                 _state.State = State.DrivingToPlayer;
                 _timer.Start();
             }
-            else
-                LogHandler.Log("Driver or Car doesn't exist!", LogType.Error);
         }
 
+        /// <summary>
+        /// Makes the police driver wander and removes flags so they can naturally despawn
+        /// </summary>
         private void DisposePoliceDriver()
         {
             if (!PoliceDriver) return;
+            PoliceDriver.Tasks.Clear();
             PoliceDriver.Tasks.Wander();
             PoliceDriver.IsPersistent = false;
+            PoliceDriver = null;
         }
 
         /// <summary>
@@ -279,12 +279,9 @@ namespace Bait_Car.Handlers
         /// <returns>True if the buttons are pressed</returns>
         private bool AreWarpKeysPressed()
         {
-            var keys = _config.GetKey("Keys", "WarpCar", new[] { Keys.Shift, Keys.Y });
-            var button = _config.GetButton("Controller", "WarpCar");
-
             bool keysPressed;
 
-            switch (keys.First())
+            switch (_keys.First())
             {
                 case Keys.Shift:
                 case Keys.ShiftKey:
@@ -299,11 +296,11 @@ namespace Bait_Car.Handlers
                     keysPressed = Game.IsControlKeyDownRightNow;
                     break;
                 default:
-                    keysPressed = Game.IsKeyDown(keys.First());
+                    keysPressed = Game.IsKeyDown(_keys.First());
                     break;
             }
 
-            switch (keys.Last())
+            switch (_keys.Last())
             {
                 case Keys.Shift:
                 case Keys.ShiftKey:
@@ -320,11 +317,11 @@ namespace Bait_Car.Handlers
                         keysPressed = Game.IsControlKeyDownRightNow;
                     break;
                 default:
-                    keysPressed = Game.IsKeyDown(keys.Last());
+                    keysPressed = Game.IsKeyDown(_keys.Last());
                     break;
             }
 
-            return keysPressed || Game.IsControllerButtonDown(button);
+            return keysPressed || Game.IsControllerButtonDown(_button);
         }
 
         /// <summary>
@@ -412,8 +409,18 @@ namespace Bait_Car.Handlers
             switch (_state.State)
             {
                 case State.DrivingToPlayer:
-                    var keys = _config.GetKey("Keys", "WarpCar", new[] { Keys.Shift, Keys.Y });
-                    var button = _config.GetButton("Buttons", "WarpCar");
+                    // Exit the car and approch the player
+                    if (Car && PoliceDriver &&
+                        Car.DistanceTo(Game.LocalPlayer.Character.Position) <= 10f)
+                    {
+                        PoliceDriver.Tasks.Clear();
+                        PoliceDriver.Tasks.LeaveVehicle(Car, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
+                        PoliceDriver.Tasks.GoToOffsetFromEntity(Game.LocalPlayer.Character, 5f, (float)CalculateHeading(PoliceDriver, Game.LocalPlayer.Character), 1.8f)
+                            .WaitForCompletion(1000);
+                        Game.DisplaySubtitle("Here is the car you requested, Sir.");
+                        DisposePoliceDriver();
+                        _state.State = State.PlayerParking;
+                    }
 
                     // Check if keys/buttons are down
                     if (AreWarpKeysPressed())
@@ -432,30 +439,17 @@ namespace Bait_Car.Handlers
                     if (_timer.Elapsed.TotalSeconds > 30)
                     {
                         // TODO: Display button if set and using controller
-                        if (keys.Length > 1)
+                        if (_keys.Length > 1)
                             Game.DisplayNotification(
                                 "Your bait car is stuck in traffic. Press " +
-                                $"~y~'{keys[0]} + {keys[1]}'~w~" +
+                                $"~y~'{_keys[0]} + {_keys[1]}'~w~" +
                                 " to warp it closer.");
                         else
                             Game.DisplayNotification(
                                 "Your bait car is stuck in traffic. Press " +
-                                $"~y~'{keys[0]}'~w~" +
+                                $"~y~'{_keys[0]}'~w~" +
                                 " to warp it closer.");
                         _timer.Reset();
-                    }
-
-                    // Exit the car and approch the player
-                    if (Car && PoliceDriver &&
-                        Car.DistanceTo(Game.LocalPlayer.Character.Position) <= 10f)
-                    {
-                        PoliceDriver.Tasks.Clear();
-                        PoliceDriver.Tasks.LeaveVehicle(Car, LeaveVehicleFlags.LeaveDoorOpen).WaitForCompletion();
-                        PoliceDriver.Tasks.GoToOffsetFromEntity(Game.LocalPlayer.Character, 5f, (float)CalculateHeading(PoliceDriver, Game.LocalPlayer.Character), 1.8f)
-                            .WaitForCompletion(1000);
-                        Game.DisplaySubtitle("Here is the car you requested, Sir.");
-                        DisposePoliceDriver();
-                        _state.State = State.PlayerParking;
                     }
                     break;
 
@@ -524,9 +518,7 @@ namespace Bait_Car.Handlers
                         if (TheifDriver.DistanceTo(Game.LocalPlayer.Character.Position) < 25f)
                         {
                             // Reset our ped
-                            TheifDriver.Tasks.Clear();
-                            TheifDriver.Tasks.Wander();
-                            TheifDriver = null;
+                            DisposePoliceDriver();
 
                             // Restart our wait timer and break out of the loop so we can find a new ped
                             _timer.Restart();
