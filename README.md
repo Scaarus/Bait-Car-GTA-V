@@ -1,3 +1,5 @@
+This project is abanonded. Feel free to use the code however you like as long as you credit me. As far as I know it stopped running around RPH 0.62 Alpha.
+
 # Bait Car
 Bait car is a plugin for RAGEPluginHook that enhances law enforcement role play.
 
@@ -7,10 +9,6 @@ Bait car is a plugin for RAGEPluginHook that enhances law enforcement role play.
 * Control the bait car using the in game menu or by using the customizable key bindings.
 * Options editable in game.
 * Configurable ini file.
-
-### Planned Features
-
-The ["Features"](https://github.com/Scaarus/Bait-Car-GTA-V/projects/1) project contains all of the planned features for this plugin. Suggestions are always welcome.
 
 ### Requirements
 
